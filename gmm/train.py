@@ -4,6 +4,48 @@ import util
 import itertools
 
 
+def train_mws(generative_model, inference_network,
+              true_generative_model, batch_size,
+              num_iterations, num_particles, memory_size, callback=None):
+    optimizer = torch.optim.Adam(itertools.chain(
+        generative_model.parameters(), inference_network.parameters()))
+
+    memory = {}
+
+    for iteration in range(num_iterations):
+        # generate synthetic data
+        # TODO: fix the size of training data
+        obss = true_generative_model.sample_obs(batch_size) # [batch_size]
+        theta_loss = 0
+        phi_loss = 0
+        for obs in obss:
+            # wake
+            latent_dist = inference_network.get_latent_dist(obs)
+            latent = inference_network.sample_from_latent_dist(
+                latent_dist, num_particles=1, reparam=False)
+            proposals = set(memory.get(obs, default=[]) + [latent])
+            log_p = {latent: generative_model.get_log_prob(latent, obs).transpose(0, 1)
+                     for latent in proposals} # [batch_size, 1]
+            memory[obs] = sorted(proposals, key=log_p.get)[-memory_size:]
+
+            # remember
+            i_r = torch.distributions.Categorical(logits=map(log_p.get, memory[obs])).sample()
+            z_r = memory[obs][i_r]
+            theta_loss = theta_loss + log_p.get(z_r) / len(obss)
+            phi_loss = phi_loss + inference_network.get_log_prob_from_latent_dist(
+                latent_dist, z_r).transpose(0, 1) / len(obss)
+
+            # sleep
+            # TODO
+
+        optimizer.zero_grad()
+        theta_loss.backward()
+        phi_loss.backward()
+        optimizer.step()
+
+    return optimizer
+
+
 def train_wake_sleep(generative_model, inference_network,
                      true_generative_model, batch_size,
                      num_iterations, num_particles, callback=None):
