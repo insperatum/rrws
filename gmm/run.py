@@ -55,7 +55,7 @@ def run(args):
             args.batch_size * args.num_particles, args.logging_interval,
             args.checkpoint_interval, args.eval_interval)
         train.train_wake_sleep(generative_model, inference_network,
-                               obss_data_loader, args.num_iterations, 
+                               obss_data_loader, args.num_iterations,
                                args.num_particles, train_callback)
     elif args.train_mode == 'ww':
         train_callback = train.TrainWakeWakeCallback(
