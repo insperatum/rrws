@@ -12,6 +12,8 @@ def train_mws(generative_model, inference_network,
 
     memory = {}
 
+    # TODO: initialize memory so that for each obs, there are memory_size latents
+
     for iteration in range(num_iterations):
         # generate synthetic data
         # TODO: fix the size of training data
@@ -23,7 +25,7 @@ def train_mws(generative_model, inference_network,
             latent_dist = inference_network.get_latent_dist(obs)
             latent = inference_network.sample_from_latent_dist(
                 latent_dist, num_particles=1, reparam=False)
-            proposals = set(memory.get(obs, default=[]) + [latent])
+            proposals = set(memory.get(obs, []) + [latent])
             log_p = {latent: generative_model.get_log_prob(latent, obs).transpose(0, 1)
                      for latent in proposals} # [batch_size, 1]
             memory[obs] = sorted(proposals, key=log_p.get)[-memory_size:]
