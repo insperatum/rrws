@@ -49,6 +49,12 @@ def run(args):
         batch_size=args.batch_size, shuffle=True)
 
     # train
+    if args.train_mode == 'mws':
+        train_callback = train.TrainMWSCallback(
+            model_folder, true_generative_model, args.logging_interval,
+            args.checkpoint_interval, args.eval_interval)
+        train.train_mws(generative_model, inference_network, obss_data_loader,
+                        args.num_iterations, args.mws_memory_size, train_callback)
     if args.train_mode == 'ws':
         train_callback = train.TrainWakeSleepCallback(
             model_folder, true_generative_model,
@@ -112,8 +118,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--train-mode', default='ww',
-                        help='dww, ww, ws, reinforce, vimco, concrete or '
-                             'relax')
+                        help='mws, dww, ww, ws, reinforce, vimco, concrete or'
+                             ' relax')
     parser.add_argument('--num-iterations', type=int, default=100000)
     parser.add_argument('--logging-interval', type=int, default=1000)
     parser.add_argument('--eval-interval', type=int, default=1000)
@@ -121,6 +127,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', type=int, default=100)
     parser.add_argument('--num-particles', type=int, default=2)
     parser.add_argument('--num-obss', type=int, default=1000000)
+    parser.add_argument('--mws-memory-size', type=int, default=10)
     parser.add_argument('--init-near', action='store_true',
                         help='initialize model so that data distribution is '
                              'close to the true data distribution')

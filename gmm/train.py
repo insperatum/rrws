@@ -4,40 +4,58 @@ import util
 import itertools
 
 
-def train_mws(generative_model, inference_network,
-              true_generative_model, batch_size,
-              num_iterations, num_particles, memory_size, callback=None):
+def train_mws(generative_model, inference_network, obss_data_loader,
+              num_iterations, memory_size, callback=None):
     optimizer = torch.optim.Adam(itertools.chain(
         generative_model.parameters(), inference_network.parameters()))
 
     memory = {}
-
     # TODO: initialize memory so that for each obs, there are memory_size latents
 
+    obss_iter = iter(obss_data_loader)
+
     for iteration in range(num_iterations):
-        # generate synthetic data
-        # TODO: fix the size of training data
-        obss = true_generative_model.sample_obs(batch_size) # [batch_size]
+        # get obss
+        try:
+            obss = next(obss_iter)
+        except StopIteration:
+            obss_iter = iter(obss_data_loader)
+            obss = next(obss_iter)
+
         theta_loss = 0
         phi_loss = 0
         for obs in obss:
-            # wake
-            latent_dist = inference_network.get_latent_dist(obs)
+            # WAKE
+            # batch shape [1] and event shape [num_mixtures]
+            latent_dist = inference_network.get_latent_dist(obs.unsqueeze(0))
+            # [1, 1, num_mixtures]
             latent = inference_network.sample_from_latent_dist(
-                latent_dist, num_particles=1, reparam=False)
-            proposals = set(memory.get(obs, []) + [latent])
-            log_p = {latent: generative_model.get_log_prob(latent, obs).transpose(0, 1)
-                     for latent in proposals} # [batch_size, 1]
-            memory[obs] = sorted(proposals, key=log_p.get)[-memory_size:]
+                latent_dist, num_samples=1, reparam=False)
+            memoized_latents_plus_current_latent = set(memory.get(obs, []) +
+                                                       [latent])
+            # {[1, 1, num_mixtures]: [1, 1], ...}
+            log_p = {latent: generative_model.get_log_prob(latent, obs)
+                     for latent in memoized_latents_plus_current_latent}
 
-            # remember
-            i_r = torch.distributions.Categorical(logits=map(log_p.get, memory[obs])).sample()
-            z_r = memory[obs][i_r]
-            theta_loss = theta_loss + log_p.get(z_r) / len(obss)
-            phi_loss = phi_loss + inference_network.get_log_prob_from_latent_dist(
-                latent_dist, z_r).transpose(0, 1) / len(obss)
+            # update memory. TODO check whether things are sorted correctly
+            # {[]: list of [1, 1, num_mixtures]}
+            memory[obs] = sorted(memoized_latents_plus_current_latent,
+                                 key=log_p.get)[-memory_size:]
 
-            # sleep
+            # REMEMBER
+            # []
+            remembered_latent_id = torch.distributions.Categorical(
+                logits=torch.tensor(list(map(log_p.get, memory[obs])))
+            ).sample()
+            # [1, 1, num_mixtures]
+            remembered_latent = memory[obs][remembered_latent_id]
+            # []
+            theta_loss += log_p.get(remembered_latent).view(()) / len(obss)
+            # []
+            phi_loss += inference_network.get_log_prob_from_latent_dist(
+                latent_dist, remembered_latent).view(()) / len(obss)
+
+            # SLEEP
             # TODO
 
         optimizer.zero_grad()
@@ -45,7 +63,54 @@ def train_mws(generative_model, inference_network,
         phi_loss.backward()
         optimizer.step()
 
+        if callback is not None:
+            callback(iteration, theta_loss.item(), phi_loss.item(),
+                     generative_model, inference_network, optimizer)
+
     return optimizer
+
+
+class TrainMWSCallback():
+    def __init__(self, model_folder, true_generative_model,
+                 logging_interval=10, checkpoint_interval=100,
+                 eval_interval=10):
+        self.model_folder = model_folder
+        self.true_generative_model = true_generative_model
+        self.logging_interval = logging_interval
+        self.checkpoint_interval = checkpoint_interval
+        self.eval_interval = eval_interval
+        self.test_obss = true_generative_model.sample_obs(100)
+
+        self.theta_loss_history = []
+        self.phi_loss_history = []
+        self.p_error_history = []
+        self.q_error_history = []
+
+    def __call__(self, iteration, theta_loss, phi_loss,
+                 generative_model, inference_network, optimizer):
+        if iteration % self.logging_interval == 0:
+            util.print_with_time(
+                'Iteration {} losses: theta = {:.3f}, phi = {:.3f}'.format(
+                    iteration, theta_loss, phi_loss))
+            self.theta_loss_history.append(theta_loss)
+            self.phi_loss_history.append(phi_loss)
+
+        if iteration % self.checkpoint_interval == 0:
+            stats_filename = util.get_stats_path(self.model_folder)
+            util.save_object(self, stats_filename)
+            util.save_models(generative_model, inference_network,
+                             self.model_folder, iteration)
+
+        if iteration % self.eval_interval == 0:
+            self.p_error_history.append(util.get_p_error(
+                self.true_generative_model, generative_model))
+            self.q_error_history.append(util.get_q_error(
+                self.true_generative_model, inference_network, self.test_obss))
+            util.print_with_time(
+                'Iteration {} p_error = {:.3f}, q_error_to_true = '
+                '{:.3f}'.format(
+                    iteration, self.p_error_history[-1],
+                    self.q_error_history[-1]))
 
 
 def train_wake_sleep(generative_model, inference_network,
