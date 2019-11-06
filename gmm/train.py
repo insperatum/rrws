@@ -49,21 +49,26 @@ def train_mws(generative_model, inference_network,
 
 
 def train_wake_sleep(generative_model, inference_network,
-                     true_generative_model, batch_size,
-                     num_iterations, num_particles, callback=None):
-    num_samples = batch_size * num_particles
+                     obss_data_loader, num_iterations, num_particles,
+                     callback=None):
+    num_samples = obss_data_loader.batch_size * num_particles
     optimizer_phi = torch.optim.Adam(inference_network.parameters())
     optimizer_theta = torch.optim.Adam(generative_model.parameters())
+    obss_iter = iter(obss_data_loader)
 
     for iteration in range(num_iterations):
-        # generate synthetic data
-        obs = true_generative_model.sample_obs(batch_size)
+        # get obss
+        try:
+            obss = next(obss_iter)
+        except StopIteration:
+            obss_iter = iter(obss_data_loader)
+            obss = next(obss_iter)
 
         # wake theta
         optimizer_phi.zero_grad()
         optimizer_theta.zero_grad()
         wake_theta_loss, elbo = losses.get_wake_theta_loss(
-            generative_model, inference_network, obs, num_particles)
+            generative_model, inference_network, obss, num_particles)
         wake_theta_loss.backward()
         optimizer_theta.step()
 
@@ -93,7 +98,7 @@ class TrainWakeSleepCallback():
         self.logging_interval = logging_interval
         self.checkpoint_interval = checkpoint_interval
         self.eval_interval = eval_interval
-        self.test_obs = true_generative_model.sample_obs(100)
+        self.test_obss = true_generative_model.sample_obs(100)
 
         self.wake_theta_loss_history = []
         self.sleep_phi_loss_history = []
@@ -124,7 +129,7 @@ class TrainWakeSleepCallback():
             self.p_error_history.append(util.get_p_error(
                 self.true_generative_model, generative_model))
             self.q_error_history.append(util.get_q_error(
-                self.true_generative_model, inference_network, self.test_obs))
+                self.true_generative_model, inference_network, self.test_obss))
             stats = util.OnlineMeanStd()
             for _ in range(10):
                 inference_network.zero_grad()
@@ -140,18 +145,22 @@ class TrainWakeSleepCallback():
                     self.q_error_history[-1]))
 
 
-def train_wake_wake(generative_model, inference_network,
-                    true_generative_model, batch_size,
+def train_wake_wake(generative_model, inference_network, obss_data_loader,
                     num_iterations, num_particles, callback=None):
     optimizer_phi = torch.optim.Adam(inference_network.parameters())
     optimizer_theta = torch.optim.Adam(generative_model.parameters())
+    obss_iter = iter(obss_data_loader)
 
     for iteration in range(num_iterations):
-        # generate synthetic data
-        obs = true_generative_model.sample_obs(batch_size)
+        # get obss
+        try:
+            obss = next(obss_iter)
+        except StopIteration:
+            obss_iter = iter(obss_data_loader)
+            obss = next(obss_iter)
 
         log_weight, log_q = losses.get_log_weight_and_log_q(
-            generative_model, inference_network, obs, num_particles)
+            generative_model, inference_network, obss, num_particles)
 
         # wake theta
         optimizer_phi.zero_grad()
@@ -178,17 +187,22 @@ def train_wake_wake(generative_model, inference_network,
 
 
 def train_defensive_wake_wake(delta, generative_model, inference_network,
-                              true_generative_model, batch_size,
-                              num_iterations, num_particles, callback=None):
+                              obss_data_loader, num_iterations, num_particles,
+                              callback=None):
     optimizer_phi = torch.optim.Adam(inference_network.parameters())
     optimizer_theta = torch.optim.Adam(generative_model.parameters())
+    obss_iter = iter(obss_data_loader)
 
     for iteration in range(num_iterations):
-        # generate synthetic data
-        obs = true_generative_model.sample_obs(batch_size)
+        # get obss
+        try:
+            obss = next(obss_iter)
+        except StopIteration:
+            obss_iter = iter(obss_data_loader)
+            obss = next(obss_iter)
 
         log_weight, log_q = losses.get_log_weight_and_log_q(
-            generative_model, inference_network, obs, num_particles)
+            generative_model, inference_network, obss, num_particles)
 
         # wake theta
         optimizer_phi.zero_grad()
@@ -202,7 +216,7 @@ def train_defensive_wake_wake(delta, generative_model, inference_network,
         optimizer_phi.zero_grad()
         optimizer_theta.zero_grad()
         wake_phi_loss = losses.get_defensive_wake_phi_loss(
-            generative_model, inference_network, obs, delta, num_particles)
+            generative_model, inference_network, obss, delta, num_particles)
         wake_phi_loss.backward()
         optimizer_phi.step()
 
@@ -224,7 +238,7 @@ class TrainWakeWakeCallback():
         self.logging_interval = logging_interval
         self.checkpoint_interval = checkpoint_interval
         self.eval_interval = eval_interval
-        self.test_obs = true_generative_model.sample_obs(100)
+        self.test_obss = true_generative_model.sample_obs(100)
 
         self.wake_theta_loss_history = []
         self.wake_phi_loss_history = []
@@ -255,12 +269,12 @@ class TrainWakeWakeCallback():
             self.p_error_history.append(util.get_p_error(
                 self.true_generative_model, generative_model))
             self.q_error_history.append(util.get_q_error(
-                self.true_generative_model, inference_network, self.test_obs))
+                self.true_generative_model, inference_network, self.test_obss))
             stats = util.OnlineMeanStd()
             for _ in range(10):
                 inference_network.zero_grad()
                 wake_phi_loss = losses.get_wake_phi_loss(
-                    generative_model, inference_network, self.test_obs,
+                    generative_model, inference_network, self.test_obss,
                     self.num_particles)
                 wake_phi_loss.backward()
                 stats.update([p.grad for p in inference_network.parameters()])
@@ -283,7 +297,7 @@ class TrainDefensiveWakeWakeCallback():
         self.logging_interval = logging_interval
         self.checkpoint_interval = checkpoint_interval
         self.eval_interval = eval_interval
-        self.test_obs = true_generative_model.sample_obs(100)
+        self.test_obss = true_generative_model.sample_obs(100)
 
         self.wake_theta_loss_history = []
         self.wake_phi_loss_history = []
@@ -314,12 +328,12 @@ class TrainDefensiveWakeWakeCallback():
             self.p_error_history.append(util.get_p_error(
                 self.true_generative_model, generative_model))
             self.q_error_history.append(util.get_q_error(
-                self.true_generative_model, inference_network, self.test_obs))
+                self.true_generative_model, inference_network, self.test_obss))
             stats = util.OnlineMeanStd()
             for _ in range(10):
                 inference_network.zero_grad()
                 wake_phi_loss = losses.get_defensive_wake_phi_loss(
-                    generative_model, inference_network, self.test_obs,
+                    generative_model, inference_network, self.test_obss,
                     self.delta, self.num_particles)
                 wake_phi_loss.backward()
                 stats.update([p.grad for p in inference_network.parameters()])
@@ -332,8 +346,8 @@ class TrainDefensiveWakeWakeCallback():
 
 
 def train_iwae(algorithm, generative_model, inference_network,
-               true_generative_model, batch_size, num_iterations,
-               num_particles, callback=None):
+               obss_data_loader, num_iterations, num_particles,
+               callback=None):
     """Train using IWAE objective.
 
     Args:
@@ -343,22 +357,27 @@ def train_iwae(algorithm, generative_model, inference_network,
     parameters = itertools.chain.from_iterable(
         [x.parameters() for x in [generative_model, inference_network]])
     optimizer = torch.optim.Adam(parameters)
+    obss_iter = iter(obss_data_loader)
 
     for iteration in range(num_iterations):
-        # generate synthetic data
-        obs = true_generative_model.sample_obs(batch_size)
+        # get obss
+        try:
+            obss = next(obss_iter)
+        except StopIteration:
+            obss_iter = iter(obss_data_loader)
+            obss = next(obss_iter)
 
         # wake theta
         optimizer.zero_grad()
         if algorithm == 'vimco':
             loss, elbo = losses.get_vimco_loss(
-                generative_model, inference_network, obs, num_particles)
+                generative_model, inference_network, obss, num_particles)
         elif algorithm == 'reinforce':
             loss, elbo = losses.get_reinforce_loss(
-                generative_model, inference_network, obs, num_particles)
+                generative_model, inference_network, obss, num_particles)
         elif algorithm == 'concrete':
             loss, elbo = losses.get_concrete_loss(
-                generative_model, inference_network, obs, num_particles)
+                generative_model, inference_network, obss, num_particles)
         loss.backward()
         optimizer.step()
 
@@ -380,7 +399,7 @@ class TrainIwaeCallback():
         self.logging_interval = logging_interval
         self.checkpoint_interval = checkpoint_interval
         self.eval_interval = eval_interval
-        self.test_obs = true_generative_model.sample_obs(100)
+        self.test_obss = true_generative_model.sample_obs(100)
 
         self.loss_history = []
         self.elbo_history = []
@@ -407,17 +426,17 @@ class TrainIwaeCallback():
             self.p_error_history.append(util.get_p_error(
                 self.true_generative_model, generative_model))
             self.q_error_history.append(util.get_q_error(
-                self.true_generative_model, inference_network, self.test_obs))
+                self.true_generative_model, inference_network, self.test_obss))
             stats = util.OnlineMeanStd()
             for _ in range(10):
                 inference_network.zero_grad()
                 if self.train_mode == 'vimco':
                     loss, elbo = losses.get_vimco_loss(
-                        generative_model, inference_network, self.test_obs,
+                        generative_model, inference_network, self.test_obss,
                         self.num_particles)
                 elif self.train_mode == 'reinforce':
                     loss, elbo = losses.get_reinforce_loss(
-                        generative_model, inference_network, self.test_obs,
+                        generative_model, inference_network, self.test_obss,
                         self.num_particles)
                 loss.backward()
                 stats.update([p.grad for p in inference_network.parameters()])
@@ -439,7 +458,7 @@ class TrainConcreteCallback():
         self.logging_interval = logging_interval
         self.checkpoint_interval = checkpoint_interval
         self.eval_interval = eval_interval
-        self.test_obs = true_generative_model.sample_obs(100)
+        self.test_obss = true_generative_model.sample_obs(100)
 
         self.loss_history = []
         self.elbo_history = []
@@ -475,12 +494,12 @@ class TrainConcreteCallback():
             self.p_error_history.append(util.get_p_error(
                 self.true_generative_model, generative_model))
             self.q_error_history.append(util.get_q_error(
-                self.true_generative_model, inference_network, self.test_obs))
+                self.true_generative_model, inference_network, self.test_obss))
             stats = util.OnlineMeanStd()
             for _ in range(10):
                 inference_network.zero_grad()
                 loss, _ = losses.get_concrete_loss(
-                    generative_model, inference_network, self.test_obs,
+                    generative_model, inference_network, self.test_obss,
                     self.num_particles)
                 loss.backward()
                 stats.update([p.grad for p in inference_network.parameters()])
@@ -493,8 +512,8 @@ class TrainConcreteCallback():
 
 
 def train_relax(generative_model, inference_network, control_variate,
-                true_generative_model, batch_size, num_iterations,
-                num_particles, callback=None):
+                obss_data_loader, num_iterations, num_particles,
+                callback=None):
     """Train using RELAX."""
 
     num_q_params = sum([param.nelement()
@@ -502,16 +521,21 @@ def train_relax(generative_model, inference_network, control_variate,
     iwae_optimizer = torch.optim.Adam(itertools.chain(
         generative_model.parameters(), inference_network.parameters()))
     control_variate_optimizer = torch.optim.Adam(control_variate.parameters())
+    obss_iter = iter(obss_data_loader)
 
     for iteration in range(num_iterations):
-        # generate synthetic data
-        obs = true_generative_model.sample_obs(batch_size)
+        # get obss
+        try:
+            obss = next(obss_iter)
+        except StopIteration:
+            obss_iter = iter(obss_data_loader)
+            obss = next(obss_iter)
 
         # optimize theta and phi
         iwae_optimizer.zero_grad()
         control_variate_optimizer.zero_grad()
         loss, elbo = losses.get_relax_loss(
-            generative_model, inference_network, control_variate, obs,
+            generative_model, inference_network, control_variate, obss,
             num_particles)
         if torch.isnan(loss):
             import pdb
@@ -546,7 +570,7 @@ class TrainRelaxCallback():
         self.logging_interval = logging_interval
         self.checkpoint_interval = checkpoint_interval
         self.eval_interval = eval_interval
-        self.test_obs = true_generative_model.sample_obs(100)
+        self.test_obss = true_generative_model.sample_obs(100)
 
         self.loss_history = []
         self.elbo_history = []
@@ -575,13 +599,13 @@ class TrainRelaxCallback():
             self.p_error_history.append(util.get_p_error(
                 self.true_generative_model, generative_model))
             self.q_error_history.append(util.get_q_error(
-                self.true_generative_model, inference_network, self.test_obs))
+                self.true_generative_model, inference_network, self.test_obss))
             stats = util.OnlineMeanStd()
             for _ in range(10):
                 inference_network.zero_grad()
                 loss, _ = losses.get_relax_loss(
                     generative_model, inference_network, control_variate,
-                    self.test_obs, self.num_particles)
+                    self.test_obss, self.num_particles)
                 loss.backward()
                 stats.update([p.grad for p in inference_network.parameters()])
             self.grad_std_history.append(stats.avg_of_means_stds()[1])

@@ -43,6 +43,11 @@ def run(args):
     if args.train_mode == 'relax':
         control_variate = models.ControlVariate(args.num_mixtures)
 
+    # init dataloader
+    obss_data_loader = torch.utils.data.DataLoader(
+        true_generative_model.sample_obs(args.num_obss),
+        batch_size=args.batch_size, shuffle=True)
+
     # train
     if args.train_mode == 'ws':
         train_callback = train.TrainWakeSleepCallback(
@@ -50,26 +55,24 @@ def run(args):
             args.batch_size * args.num_particles, args.logging_interval,
             args.checkpoint_interval, args.eval_interval)
         train.train_wake_sleep(generative_model, inference_network,
-                               true_generative_model, args.batch_size,
-                               args.num_iterations, args.num_particles,
-                               train_callback)
+                               obss_data_loader, args.num_iterations, 
+                               args.num_particles, train_callback)
     elif args.train_mode == 'ww':
         train_callback = train.TrainWakeWakeCallback(
             model_folder, true_generative_model, args.num_particles,
             args.logging_interval, args.checkpoint_interval,
             args.eval_interval)
         train.train_wake_wake(generative_model, inference_network,
-                              true_generative_model, args.batch_size,
-                              args.num_iterations, args.num_particles,
-                              train_callback)
+                              obss_data_loader, args.num_iterations,
+                              args.num_particles, train_callback)
     elif args.train_mode == 'dww':
         train_callback = train.TrainDefensiveWakeWakeCallback(
             model_folder, true_generative_model, args.num_particles, 0.2,
             args.logging_interval, args.checkpoint_interval,
             args.eval_interval)
         train.train_defensive_wake_wake(
-            0.2, generative_model, inference_network, true_generative_model,
-            args.batch_size, args.num_iterations, args.num_particles,
+            0.2, generative_model, inference_network, obss_data_loader,
+            args.num_iterations, args.num_particles,
             train_callback)
     elif args.train_mode == 'reinforce' or args.train_mode == 'vimco':
         train_callback = train.TrainIwaeCallback(
@@ -77,27 +80,24 @@ def run(args):
             args.train_mode, args.logging_interval, args.checkpoint_interval,
             args.eval_interval)
         train.train_iwae(args.train_mode, generative_model, inference_network,
-                         true_generative_model, args.batch_size,
-                         args.num_iterations, args.num_particles,
-                         train_callback)
+                         obss_data_loader, args.num_iterations,
+                         args.num_particles, train_callback)
     elif args.train_mode == 'concrete':
         train_callback = train.TrainConcreteCallback(
             model_folder, true_generative_model, args.num_particles,
             args.num_iterations, args.logging_interval,
             args.checkpoint_interval, args.eval_interval)
         train.train_iwae(args.train_mode, generative_model, inference_network,
-                         true_generative_model, args.batch_size,
-                         args.num_iterations, args.num_particles,
-                         train_callback)
+                         obss_data_loader, args.num_iterations,
+                         args.num_particles, train_callback)
     elif args.train_mode == 'relax':
         train_callback = train.TrainRelaxCallback(
             model_folder, true_generative_model, args.num_particles,
             args.logging_interval, args.checkpoint_interval,
             args.eval_interval)
         train.train_relax(generative_model, inference_network, control_variate,
-                          true_generative_model, args.batch_size,
-                          args.num_iterations, args.num_particles,
-                          train_callback)
+                          obss_data_loader, args.num_iterations,
+                          args.num_particles, train_callback)
 
     # save models and stats
     util.save_models(generative_model, inference_network, model_folder)
@@ -114,18 +114,13 @@ if __name__ == '__main__':
     parser.add_argument('--train-mode', default='ww',
                         help='dww, ww, ws, reinforce, vimco, concrete or '
                              'relax')
-    parser.add_argument('--num-iterations', type=int, default=100000,
-                        help=' ')
-    parser.add_argument('--logging-interval', type=int, default=1000,
-                        help=' ')
-    parser.add_argument('--eval-interval', type=int, default=1000,
-                        help=' ')
-    parser.add_argument('--checkpoint-interval', type=int, default=1000,
-                        help=' ')
-    parser.add_argument('--batch-size', type=int, default=100,
-                        help=' ')
-    parser.add_argument('--num-particles', type=int, default=2,
-                        help=' ')
+    parser.add_argument('--num-iterations', type=int, default=100000)
+    parser.add_argument('--logging-interval', type=int, default=1000)
+    parser.add_argument('--eval-interval', type=int, default=1000)
+    parser.add_argument('--checkpoint-interval', type=int, default=1000)
+    parser.add_argument('--batch-size', type=int, default=100)
+    parser.add_argument('--num-particles', type=int, default=2)
+    parser.add_argument('--num-obss', type=int, default=1000000)
     parser.add_argument('--init-near', action='store_true',
                         help='initialize model so that data distribution is '
                              'close to the true data distribution')
