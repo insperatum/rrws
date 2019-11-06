@@ -233,10 +233,10 @@ def sample_relax(inference_network, control_variate, obs, num_particles,
     v = torch.distributions.Uniform(0 + epsilon, 1 - epsilon).sample(
         sample_shape=(batch_size * num_particles, num_mixtures))
     latent_aux_tilde = torch.zeros(batch_size * num_particles, num_mixtures)
-    latent_aux_tilde[latent.byte()] = -torch.log(-torch.log(v[latent.byte()]))
-    latent_aux_tilde[1 - latent.byte()] = -torch.log(
-        -torch.log(v[1 - latent.byte()]) / probs_expanded[1 - latent.byte()] -
-        torch.log(v[latent.byte()])
+    latent_aux_tilde[latent.bool()] = -torch.log(-torch.log(v[latent.bool()]))
+    latent_aux_tilde[~latent.bool()] = -torch.log(
+        -torch.log(v[~latent.bool()]) / probs_expanded[~latent.bool()] -
+        torch.log(v[latent.bool()])
         .unsqueeze(-1).expand(-1, num_mixtures - 1).contiguous().view(-1))
     return [x.view(batch_size, num_particles, num_mixtures)
             for x in [latent, latent_aux, latent_aux_tilde]]
