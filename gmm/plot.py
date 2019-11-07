@@ -33,16 +33,16 @@ plt.rc('text.latex',
 plt.rc('font', **{'family': 'sans-serif', 'sans-serif': ['cm']})
 plt.rc('axes', titlepad=3)
 
-colors = ['C0', 'C3', 'C4', 'C5', 'C1', 'C6', 'C7']
+colors = ['C0', 'C3', 'C4', 'C5', 'C1', 'C6', 'C7', 'C8']
 linestyles = ['dashed', 'dashed', 'dashed', 'dashed', 'solid', 'solid',
-              'solid']
+              'solid', 'solid']
 labels = ['Concrete', 'RELAX', 'REINFORCE', 'VIMCO', 'WS', 'WW',
-          r'$\delta$-WW']
+          r'$\delta$-WW', 'MWS']
 train_mode_list = ['concrete', 'relax', 'reinforce', 'vimco', 'ws', 'ww',
-                   'dww']
+                   'dww', 'mws']
 num_particles_list = [2, 5, 10, 20]
 seed_list = [1, 2, 3, 4, 5, 6, 7, 8]
-init_near = True
+init_near = False
 
 
 def delete_rows_with_nan(data):
@@ -102,10 +102,13 @@ def load_errors():
                         seed_idx, train_mode_idx,
                         num_particles_idx, :len(stats.q_error_history)
                     ] = stats.q_error_history
-                    grad_std[
-                        seed_idx, train_mode_idx,
-                        num_particles_idx, :len(stats.grad_std_history)
-                    ] = stats.grad_std_history
+                    try:
+                        grad_std[
+                            seed_idx, train_mode_idx,
+                            num_particles_idx, :len(stats.grad_std_history)
+                        ] = stats.grad_std_history
+                    except AttributeError:
+                        pass
     return p_error, q_error, grad_std
 
 
@@ -667,8 +670,8 @@ def plot_variance_analysis():
 
 
 def main():
-    plot_errors()
-    # plot_errors_no_std()
+    # plot_errors()
+    plot_errors_no_std()
     # plot_errors_just_std()
     # plot_models()
     # plot_model_movie()
