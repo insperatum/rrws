@@ -50,9 +50,9 @@ def train_mws(generative_model, inference_network, obss_data_loader,
             # [1, 1, num_mixtures]
             remembered_latent = memory[obs][remembered_latent_id]
             # []
-            theta_loss += log_p.get(remembered_latent).view(()) / len(obss)
+            theta_loss += -log_p.get(remembered_latent).view(()) / len(obss)
             # []
-            phi_loss += inference_network.get_log_prob_from_latent_dist(
+            phi_loss += -inference_network.get_log_prob_from_latent_dist(
                 latent_dist, remembered_latent).view(()) / len(obss)
 
             # SLEEP
