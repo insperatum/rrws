@@ -109,7 +109,7 @@ def get_model_folder(rootdir='./models/'):
 
 
 def save_models(generative_model, inference_network, model_folder='.',
-                iteration=None):
+                iteration=None, mws_memory=None):
     if iteration is None:
         suffix = ''
     else:
@@ -124,9 +124,14 @@ def save_models(generative_model, inference_network, model_folder='.',
     print_with_time('Saved to {}'.format(generative_model_path))
     torch.save(inference_network.state_dict(), inference_network_path)
     print_with_time('Saved to {}'.format(inference_network_path))
+    if mws_memory is not None:
+        mws_memory_path = os.path.join(model_folder,
+                                    'mws_mem{}.pkl'.format(suffix))
+        save_object(mws_memory, mws_memory_path)
+        print_with_time('Saved to {}'.format(mws_memory_path))
 
 
-def load_models(model_folder='.', iteration=None):
+def load_models(model_folder='.', iteration=None, load_mws_memory=False):
     """Returns: generative_model, inference network
     """
     if iteration is None:
@@ -152,7 +157,13 @@ def load_models(model_folder='.', iteration=None):
         inference_network.load_state_dict(torch.load(inference_network_path))
         print_with_time('Loaded from {}'.format(inference_network_path))
 
-        return generative_model, inference_network
+        if load_mws_memory:
+            mws_memory_path = os.path.join(model_folder,
+                                        'mws_mem{}.pkl'.format(suffix))
+            mws_memory = load_object(mws_memory_path)
+            return generative_model, inference_network, mws_memory
+        else:
+            return generative_model, inference_network
     else:
         return None, None
 

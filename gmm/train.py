@@ -65,7 +65,7 @@ def train_mws(generative_model, inference_network, obss_data_loader,
 
         if callback is not None:
             callback(iteration, theta_loss.item(), phi_loss.item(),
-                     generative_model, inference_network, optimizer)
+                     generative_model, inference_network, memory, optimizer)
 
     return optimizer
 
@@ -87,7 +87,7 @@ class TrainMWSCallback():
         self.q_error_history = []
 
     def __call__(self, iteration, theta_loss, phi_loss,
-                 generative_model, inference_network, optimizer):
+                 generative_model, inference_network, memory, optimizer):
         if iteration % self.logging_interval == 0:
             util.print_with_time(
                 'Iteration {} losses: theta = {:.3f}, phi = {:.3f}'.format(
@@ -99,7 +99,7 @@ class TrainMWSCallback():
             stats_filename = util.get_stats_path(self.model_folder)
             util.save_object(self, stats_filename)
             util.save_models(generative_model, inference_network,
-                             self.model_folder, iteration)
+                             self.model_folder, iteration, memory)
 
         if iteration % self.eval_interval == 0:
             self.p_error_history.append(util.get_p_error(
