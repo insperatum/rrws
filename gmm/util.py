@@ -128,7 +128,6 @@ def save_models(generative_model, inference_network, model_folder='.',
         mws_memory_path = os.path.join(model_folder,
                                     'mws_mem{}.pkl'.format(suffix))
         save_object(mws_memory, mws_memory_path)
-        print_with_time('Saved to {}'.format(mws_memory_path))
 
 
 def load_models(model_folder='.', iteration=None, load_mws_memory=False):
@@ -268,6 +267,10 @@ def get_q_error(true_generative_model, inference_network, obs):
     p_probs = true_generative_model.get_posterior_probs(obs)
     q_probs = inference_network.get_latent_params(obs)
     return torch.mean(torch.norm(p_probs - q_probs, p=2, dim=1)).item()
+
+
+def get_memory_error(true_generative_model, memory, generative_model, obs):
+    pass
 
 
 class OnlineMeanStd():

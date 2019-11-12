@@ -4,11 +4,9 @@ from run import run
 
 
 def main():
-    train_modes = ['ws', 'ww', 'dww', 'vimco', 'reinforce', 'concrete',
-                   'relax', 'mws']
+    train_modes = ['ww', 'mws']
     num_particles_list = [2, 5, 10, 20]
-    seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-    seeds = [1]
+    seeds = [1, 2, 3]
 
     for seed in seeds:
         for train_mode in train_modes:
@@ -21,8 +19,8 @@ def main():
                 args.checkpoint_interval = 1000
                 args.batch_size = 100
                 args.num_particles = num_particles
-                args.num_obss = 100000
-                args.mws_memory_size = 10
+                args.num_obss = 10000
+                args.mws_memory_size = num_particles
                 args.init_near = False
                 args.seed = seed
                 args.cuda = False

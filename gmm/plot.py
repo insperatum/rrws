@@ -38,10 +38,14 @@ linestyles = ['dashed', 'dashed', 'dashed', 'dashed', 'solid', 'solid',
               'solid', 'solid']
 labels = ['Concrete', 'RELAX', 'REINFORCE', 'VIMCO', 'WS', 'WW',
           r'$\delta$-WW', 'MWS']
+labels = ['WW', 'MWS']
 train_mode_list = ['concrete', 'relax', 'reinforce', 'vimco', 'ws', 'ww',
                    'dww', 'mws']
+train_mode_list = ['ww', 'mws']
 num_particles_list = [2, 5, 10, 20]
+num_particles_list = [2, 20]
 seed_list = [1, 2, 3, 4, 5, 6, 7, 8]
+seed_list = [1, 2, 3]
 init_near = False
 
 
