@@ -31,24 +31,24 @@ def train_mws(generative_model, inference_network, obss_data_loader,
             # [1, 1, num_mixtures]
             latent = inference_network.sample_from_latent_dist(
                 latent_dist, num_samples=1, reparam=False)
-            memoized_latents_plus_current_latent = set(memory.get(obs, []) +
-                                                       [latent])
+            memoized_latents_plus_current_latent = set(
+                memory.get(obs.item(), []) + [latent])
             # {[1, 1, num_mixtures]: [1, 1], ...}
             log_p = {latent: generative_model.get_log_prob(latent, obs)
                      for latent in memoized_latents_plus_current_latent}
 
             # update memory. TODO check whether things are sorted correctly
             # {[]: list of [1, 1, num_mixtures]}
-            memory[obs] = sorted(memoized_latents_plus_current_latent,
-                                 key=log_p.get)[-memory_size:]
+            memory[obs.item()] = sorted(memoized_latents_plus_current_latent,
+                                        key=log_p.get)[-memory_size:]
 
             # REMEMBER
             # []
             remembered_latent_id = torch.distributions.Categorical(
-                logits=torch.tensor(list(map(log_p.get, memory[obs])))
+                logits=torch.tensor(list(map(log_p.get, memory[obs.item()])))
             ).sample()
             # [1, 1, num_mixtures]
-            remembered_latent = memory[obs][remembered_latent_id]
+            remembered_latent = memory[obs.item()][remembered_latent_id]
             # []
             theta_loss += -log_p.get(remembered_latent).view(()) / len(obss)
             # []
