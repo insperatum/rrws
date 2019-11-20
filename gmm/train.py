@@ -2,6 +2,17 @@ import torch
 import losses
 import util
 import itertools
+import torch.nn.functional as F
+
+
+def one_hot_to_int(one_hot):
+    return int(torch.sum(
+        one_hot *
+        torch.arange(
+            len(one_hot),
+            dtype=one_hot.dtype,
+            device=one_hot.device
+        )).item())
 
 
 def train_mws(generative_model, inference_network, obss_data_loader,
@@ -10,7 +21,8 @@ def train_mws(generative_model, inference_network, obss_data_loader,
         generative_model.parameters(), inference_network.parameters()))
 
     memory = {}
-    # TODO: initialize memory so that for each obs, there are memory_size latents
+    # TODO: initialize memory so that for each obs, there are memory_size
+    # latents
 
     obss_iter = iter(obss_data_loader)
 
@@ -31,26 +43,49 @@ def train_mws(generative_model, inference_network, obss_data_loader,
             # [1, 1, num_mixtures]
             latent = inference_network.sample_from_latent_dist(
                 latent_dist, num_samples=1, reparam=False)
-            memoized_latents_plus_current_latent = set(
-                memory.get(obs.item(), []) + [latent])
-            # {[1, 1, num_mixtures]: [1, 1], ...}
-            log_p = {latent: generative_model.get_log_prob(latent, obs)
-                     for latent in memoized_latents_plus_current_latent}
+            # int
+            latent_int = one_hot_to_int(latent.view(-1))
+            # set of ints
+            memoized_latent_ints_plus_current_latent_int = set(
+                memory.get(obs.item(), []) + [latent_int])
 
-            # update memory. TODO check whether things are sorted correctly
-            # {[]: list of [1, 1, num_mixtures]}
-            memory[obs.item()] = sorted(memoized_latents_plus_current_latent,
-                                        key=log_p.get)[-memory_size:]
+            num_mixtures = latent.shape[2]
+            # [mem_size, 1, num_mixtures]
+            memoized_latents_plus_current_latent_tensor = F.one_hot(
+                torch.tensor(
+                    list(memoized_latent_ints_plus_current_latent_int),
+                    device=obs.device
+                ), num_mixtures).float().unsqueeze(1)
+            # [mem_size]
+            log_p_tensor = generative_model.get_log_prob(
+                memoized_latents_plus_current_latent_tensor, obs.unsqueeze(0)
+            ).squeeze(-1)
+
+            # this takes the longest
+            # {int: [], ...}
+            log_p = {latent_int: lp for latent_int, lp in zip(
+                memoized_latent_ints_plus_current_latent_int, log_p_tensor)}
+
+            # update memory.
+            # {float: list of ints}
+            memory[obs.item()] = sorted(
+                memoized_latent_ints_plus_current_latent_int,
+                key=log_p.get)[-memory_size:]
 
             # REMEMBER
             # []
             remembered_latent_id = torch.distributions.Categorical(
                 logits=torch.tensor(list(map(log_p.get, memory[obs.item()])))
             ).sample()
+            remembered_latent_int = memory[obs.item()][remembered_latent_id]
             # [1, 1, num_mixtures]
-            remembered_latent = memory[obs.item()][remembered_latent_id]
+            remembered_latent = F.one_hot(
+                torch.tensor(remembered_latent_int, device=obs.device),
+                num_mixtures
+            ).float().view(1, 1, -1)
             # []
-            theta_loss += -log_p.get(remembered_latent).view(()) / len(obss)
+            theta_loss += -log_p.get(remembered_latent_int).view(()) / \
+                len(obss)
             # []
             phi_loss += -inference_network.get_log_prob_from_latent_dist(
                 latent_dist, remembered_latent).view(()) / len(obss)
@@ -85,6 +120,7 @@ class TrainMWSCallback():
         self.phi_loss_history = []
         self.p_error_history = []
         self.q_error_history = []
+        self.memory_error_history = []
 
     def __call__(self, iteration, theta_loss, phi_loss,
                  generative_model, inference_network, memory, optimizer):
@@ -106,6 +142,10 @@ class TrainMWSCallback():
                 self.true_generative_model, generative_model))
             self.q_error_history.append(util.get_q_error(
                 self.true_generative_model, inference_network, self.test_obss))
+            # TODO
+            # self.memory_error_history.append(util.get_memory_error(
+            #     self.true_generative_model, memory, generative_model,
+            #     self.test_obss))
             util.print_with_time(
                 'Iteration {} p_error = {:.3f}, q_error_to_true = '
                 '{:.3f}'.format(
