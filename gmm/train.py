@@ -21,9 +21,6 @@ def train_mws(generative_model, inference_network, obss_data_loader,
         generative_model.parameters(), inference_network.parameters()))
 
     memory = {}
-    # TODO: initialize memory so that for each obs, there are memory_size
-    # latents
-
     obss_iter = iter(obss_data_loader)
 
     for iteration in range(num_iterations):
@@ -37,6 +34,21 @@ def train_mws(generative_model, inference_network, obss_data_loader,
         theta_loss = 0
         phi_loss = 0
         for obs in obss:
+            # populate memory if empty
+            if (obs.item() not in memory) or len(memory[obs.item()]) == 0:
+                # batch shape [1] and event shape [num_mixtures]
+                latent_dist = inference_network.get_latent_dist(
+                    obs.unsqueeze(0))
+                # [memory_size, num_mixtures]
+                latent = inference_network.sample_from_latent_dist(
+                    latent_dist, num_samples=memory_size,
+                    reparam=False).squeeze(1)
+                # list of M \in {1, ..., memory_size} elements
+                # could be less than memory_size because
+                # sampled elements can be duplicate
+                memory[obs.item()] = list(set(
+                    [one_hot_to_int(x) for x in latent]))
+
             # WAKE
             # batch shape [1] and event shape [num_mixtures]
             latent_dist = inference_network.get_latent_dist(obs.unsqueeze(0))
