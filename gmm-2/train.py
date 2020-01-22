@@ -4,7 +4,6 @@ import util
 import itertools
 print = util.print_with_time
 
-
 def train_mws(generative_model, inference_network, data_loader,
               num_iterations, memory_size, callback=None):
     optimizer = torch.optim.Adam(itertools.chain(
@@ -106,6 +105,9 @@ def train_mws(generative_model, inference_network, data_loader,
         print('it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
             iteration, theta_loss, phi_loss))
 
+        if iteration % 200 == 0:
+            z = inference_network.get_latent_dist(obs).sample()
+            util.save_plot("images/mws/iteration_{}.png".format(iteration), obs[:3], z[:3])
     return optimizer
 
 
@@ -145,4 +147,7 @@ def train_rws(generative_model, inference_network, data_loader,
         print('it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
             iteration, wake_theta_loss, wake_phi_loss))
 
+        if iteration % 200 == 0:
+            z = inference_network.get_latent_dist(obs).sample()
+            util.save_plot("images/rws/iteration_{}.png".format(iteration), obs[:3], z[:3])
     return optimizer_theta, optimizer_phi

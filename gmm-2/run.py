@@ -16,7 +16,7 @@ def run(args):
     util.print_with_time('args = {}'.format(args))
 
     # init
-    true_cluster_cov = torch.eye(args.num_dim, device=device) * 0.001
+    true_cluster_cov = torch.eye(args.num_dim, device=device) * 0.03
     (generative_model, inference_network, optimizer_theta,
      optimizer_phi, true_generative_model, theta_losses,
      phi_losses) = util.init(
@@ -43,14 +43,14 @@ if __name__ == '__main__':
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--algorithm', default='mws', help='rws or mws')
     parser.add_argument('--cuda', action='store_true', help='use cuda')
-    parser.add_argument('--batch-size', type=int, default=10, help=' ')
+    parser.add_argument('--batch-size', type=int, default=50, help=' ')
     parser.add_argument('--num-dim', type=int, default=2, help=' ')
     parser.add_argument('--num-clusters', type=int, default=3, help=' ')
-    parser.add_argument('--num-data', type=int, default=20, help=' ')
+    parser.add_argument('--num-data', type=int, default=10, help=' ')
     parser.add_argument('--num-train', type=int, default=100, help=' ')
     parser.add_argument('--num-test', type=int, default=100, help=' ')
-    parser.add_argument('--num-iterations', type=int, default=7, help=' ')
-    parser.add_argument('--num-particles', type=int, default=13, help=' ')
-    parser.add_argument('--memory-size', type=int, default=13, help=' ')
+    parser.add_argument('--num-iterations', type=int, default=10000, help=' ')
+    parser.add_argument('--num-particles', type=int, default=10, help=' ')
+    parser.add_argument('--memory-size', type=int, default=10, help=' ')
     args = parser.parse_args()
     run(args)
