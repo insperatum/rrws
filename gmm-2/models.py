@@ -17,7 +17,8 @@ def batched_kronecker(A, B):
 
 
 class GenerativeModel(nn.Module):
-    def __init__(self, num_data, num_clusters, prior_loc, prior_cov):
+    def __init__(self, num_data, num_clusters, prior_loc, prior_cov,
+                 device, cluster_cov=None):
         super(GenerativeModel, self).__init__()
         self.num_data = num_data
         self.num_clusters = num_clusters
@@ -25,10 +26,17 @@ class GenerativeModel(nn.Module):
         self.prior_cov = prior_cov
         self.num_dim = len(self.prior_loc)
         self.pre_cluster_cov = nn.Parameter(
-            torch.randn((self.num_dim, self.num_dim)))
+            torch.randn((self.num_dim, self.num_dim), device=device))
+        self.cluster_cov = cluster_cov
+        self.latent_logits = torch.ones(self.num_data, self.num_clusters,
+                                        device=device)
+        self.device = device
 
     def get_cluster_cov(self):
-        return torch.mm(self.pre_cluster_cov, self.pre_cluster_cov.t())
+        if self.cluster_cov is None:
+            return torch.mm(self.pre_cluster_cov, self.pre_cluster_cov.t())
+        else:
+            return self.cluster_cov
 
     def get_latent_dist(self):
         """Returns: distribution with batch shape [] and event shape
@@ -36,7 +44,7 @@ class GenerativeModel(nn.Module):
         """
         return torch.distributions.Independent(
             torch.distributions.Categorical(
-                logits=torch.ones(self.num_data, self.num_clusters)),
+                logits=self.latent_logits),
             reinterpreted_batch_ndims=1)
 
     def get_obs_dist(self, latent):
@@ -54,7 +62,8 @@ class GenerativeModel(nn.Module):
 
         loc = self.prior_loc.repeat(self.num_data)
 
-        epsilon = torch.eye(num_data * num_dim)[None] * 1e-6
+        epsilon = 1e-6 * torch.eye(
+            num_data * num_dim, device=self.device)[None]
         cov = (
             batched_kronecker(
                 torch.eye(num_data)[None],
@@ -85,6 +94,32 @@ class GenerativeModel(nn.Module):
             obs.repeat(num_particles, 1)
         ).reshape(num_particles, batch_size)
         return latent_log_prob + obs_log_prob
+
+    def sample_latent_and_obs(self, num_samples=1):
+        """Args:
+            num_samples: int
+
+        Returns:
+            latent: tensor of shape [num_samples, num_data]
+            obs: tensor of shape [num_samples, num_data * num_dim]
+        """
+
+        latent_dist = self.get_latent_dist()
+        latent = latent_dist.sample((num_samples,))
+        obs_dist = self.get_obs_dist(latent)
+        obs = obs_dist.sample()
+
+        return latent, obs
+
+    def sample_obs(self, num_samples=1):
+        """Args:
+            num_samples: int
+
+        Returns:
+            obs: tensor of shape [num_samples]
+        """
+
+        return self.sample_latent_and_obs(num_samples)[1]
 
 
 class InferenceNetwork(nn.Module):
