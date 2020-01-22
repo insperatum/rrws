@@ -67,6 +67,25 @@ class GenerativeModel(nn.Module):
 
         return torch.distributions.MultivariateNormal(loc, cov)
 
+    def get_log_prob(self, latent, obs):
+        """Log of joint probability.
+
+        Args:
+            latent: tensor of shape [num_particles, batch_size, num_data]
+            obs: tensor of shape [batch_size, num_data * num_dim]
+
+        Returns: tensor of shape [num_particles, batch_size]
+        """
+
+        num_particles, batch_size, _ = latent.shape
+        latent_log_prob = self.get_latent_dist().log_prob(latent)
+        obs_dist = self.get_obs_dist(
+            latent.view(num_particles * batch_size, -1))
+        obs_log_prob = obs_dist.log_prob(
+            obs.repeat(num_particles, 1)
+        ).reshape(num_particles, batch_size)
+        return latent_log_prob + obs_log_prob
+
 
 class InferenceNetwork(nn.Module):
     def __init__(self, num_data, num_clusters, num_dim):
@@ -101,3 +120,41 @@ class InferenceNetwork(nn.Module):
         return torch.distributions.Independent(
             torch.distributions.Categorical(logits=logits),
             reinterpreted_batch_ndims=1)
+
+    def sample_from_latent_dist(self, latent_dist, num_particles):
+        """Samples from q(latent | obs)
+
+        Args:
+            latent_dist: distribution with batch shape [batch_size] and event
+                shape [num_data]
+            num_particles: int
+
+        Returns:
+            latent: tensor of shape [num_particles, batch_size, num_data]
+        """
+        return latent_dist.sample((num_particles,))
+
+    def get_log_prob_from_latent_dist(self, latent_dist, latent):
+        """Log q(latent | obs).
+
+        Args:
+            latent_dist: distribution with batch shape [batch_size] and event
+                shape [num_data]
+            latent: tensor of shape [num_particles, batch_size, num_data]
+
+        Returns: tensor of shape [num_particles, batch_size]
+        """
+
+        return latent_dist.log_prob(latent)
+
+    def get_log_prob(self, latent, obs):
+        """Log q(latent | obs).
+
+        Args:
+            latent: tensor of shape [num_particles, batch_size, num_data]
+            obs: tensor of shape [batch_size]
+
+        Returns: tensor of shape [num_particles, batch_size]
+        """
+        return self.get_log_prob_from_latent_dist(
+            self.get_latent_dist(obs), latent)
