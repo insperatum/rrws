@@ -90,7 +90,8 @@ def load_checkpoint(path, device):
         checkpoint['num_dim'], true_cluster_cov, device)
 
     generative_model.load_state_dict(checkpoint['generative_model_state_dict'])
-    inference_network.load_state_dict(checkpoint['inference_network_state_dict'])
+    inference_network.load_state_dict(
+        checkpoint['inference_network_state_dict'])
     theta_losses = checkpoint['theta_losses']
     phi_losses = checkpoint['phi_losses']
     return generative_model, inference_network, theta_losses, phi_losses
