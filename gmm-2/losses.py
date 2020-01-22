@@ -4,7 +4,7 @@ import util
 
 
 def get_log_weight_and_log_q(generative_model, inference_network, obs,
-                             num_particles=1, reparam=False):
+                             num_particles=1):
     """Compute log weight and log prob of inference network.
 
     Args:
