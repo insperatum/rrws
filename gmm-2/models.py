@@ -152,7 +152,7 @@ class InferenceNetwork(nn.Module):
 
         Args:
             latent: tensor of shape [num_particles, batch_size, num_data]
-            obs: tensor of shape [batch_size]
+            obs: tensor of shape [batch_size, num_data * num_dim]
 
         Returns: tensor of shape [num_particles, batch_size]
         """
