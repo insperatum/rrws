@@ -1,5 +1,7 @@
 import torch
 import torch.nn as nn
+import losses
+import math
 
 
 def batched_kronecker(A, B):
@@ -26,7 +28,7 @@ class GenerativeModel(nn.Module):
         self.prior_cov = prior_cov
         self.num_dim = len(self.prior_loc)
         self.pre_cluster_cov = nn.Parameter(
-            torch.randn((self.num_dim, self.num_dim), device=device))
+            torch.eye(self.num_dim, device=device))
         self.cluster_cov = cluster_cov
         self.latent_logits = torch.ones(self.num_data, self.num_clusters,
                                         device=device)
@@ -193,3 +195,38 @@ class InferenceNetwork(nn.Module):
         """
         return self.get_log_prob_from_latent_dist(
             self.get_latent_dist(obs), latent)
+
+
+def get_log_p_and_kl(generative_model, inference_network, obs, num_particles):
+    """Compute log weight and log prob of inference network.
+
+    Args:
+        generative_model: models.GenerativeModel object
+        inference_network: models.InferenceNetwork object
+        obs: tensor of shape [batch_size, num_data * num_dim]
+        num_particles: int
+
+    Returns:
+        log_p: tensor [batch_size]
+        kl: tensor [batch_size]
+    """
+    log_weight, _ = losses.get_log_weight_and_log_q(
+        generative_model, inference_network, obs, num_particles)
+
+    log_p = torch.logsumexp(log_weight, dim=1) - math.log(num_particles)
+    elbo = torch.mean(log_weight, dim=1)
+    kl = log_p - elbo
+
+    return log_p, kl
+
+
+def eval_gen_inf(generative_model, guide, data_loader, num_particles):
+    log_p_total = 0
+    kl_total = 0
+    num_data = data_loader.dataset.shape[0]
+    for obs in iter(data_loader):
+        log_p, kl = get_log_p_and_kl(
+            generative_model, guide, obs, num_particles)
+        log_p_total += torch.sum(log_p).item() / num_data
+        kl_total += torch.sum(kl).item() / num_data
+    return log_p_total, kl_total
