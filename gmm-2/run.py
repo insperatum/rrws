@@ -25,22 +25,30 @@ def run(args):
     data_loader = torch.utils.data.DataLoader(
         true_generative_model.sample_obs(args.num_train),
         batch_size=args.batch_size, shuffle=True)
+    test_data_loader = torch.utils.data.DataLoader(
+        true_generative_model.sample_obs(args.num_test),
+        batch_size=args.batch_size, shuffle=True)
 
     # train
     if args.algorithm == 'mws':
-        theta_losses, phi_losses = train.train_mws(
+        (theta_losses, phi_losses, cluster_cov_distances,
+         log_ps, kls) = train.train_mws(
             generative_model, inference_network, data_loader,
-            args.num_iterations, args.memory_size)
+            args.num_iterations, args.memory_size, true_cluster_cov,
+            test_data_loader, args.test_num_particles)
     elif args.algorithm == 'rws':
-        theta_losses, phi_losses = train.train_rws(
+        (theta_losses, phi_losses, cluster_cov_distances,
+         log_ps, kls) = train.train_rws(
             generative_model, inference_network, data_loader,
-            args.num_iterations, args.num_particles)
+            args.num_iterations, args.num_particles, true_cluster_cov,
+            test_data_loader, args.test_num_particles)
 
     # save model
     checkpoint_path = '{}_{}.pt'.format(
         args.checkpoint_path_prefix, args.algorithm)
     util.save_checkpoint(checkpoint_path, generative_model, inference_network,
-                         theta_losses, phi_losses)
+                         theta_losses, phi_losses, cluster_cov_distances,
+                         log_ps, kls)
 
 
 if __name__ == '__main__':
@@ -54,9 +62,11 @@ if __name__ == '__main__':
     parser.add_argument('--num-clusters', type=int, default=3, help=' ')
     parser.add_argument('--num-data', type=int, default=20, help=' ')
     parser.add_argument('--num-train', type=int, default=100, help=' ')
-    parser.add_argument('--num-test', type=int, default=100, help=' ')
     parser.add_argument('--num-iterations', type=int, default=7, help=' ')
     parser.add_argument('--num-particles', type=int, default=13, help=' ')
+    parser.add_argument('--num-test', type=int, default=100, help=' ')
+    parser.add_argument('--test-num-particles', type=int, default=100,
+                        help=' ')
     parser.add_argument('--memory-size', type=int, default=13, help=' ')
     parser.add_argument('--checkpoint-path-prefix', default='checkpoint',
                         help=' ')

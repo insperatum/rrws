@@ -68,7 +68,7 @@ def init(num_data, num_clusters, num_dim, true_cluster_cov, device):
 
 
 def save_checkpoint(path, generative_model, inference_network, theta_losses,
-                    phi_losses):
+                    phi_losses, cluster_cov_distances, log_ps, kls):
     torch.save({
         'generative_model_state_dict': generative_model.state_dict(),
         'inference_network_state_dict': inference_network.state_dict(),
@@ -76,7 +76,10 @@ def save_checkpoint(path, generative_model, inference_network, theta_losses,
         'phi_losses': phi_losses,
         'num_data': generative_model.num_data,
         'num_clusters': generative_model.num_clusters,
-        'num_dim': generative_model.num_dim
+        'num_dim': generative_model.num_dim,
+        'cluster_cov_distances': cluster_cov_distances,
+        'log_ps': log_ps,
+        'kls': kls
     }, path)
     print_with_time('Saved checkpoint to {}'.format(path))
 
@@ -94,4 +97,9 @@ def load_checkpoint(path, device):
         checkpoint['inference_network_state_dict'])
     theta_losses = checkpoint['theta_losses']
     phi_losses = checkpoint['phi_losses']
-    return generative_model, inference_network, theta_losses, phi_losses
+    cluster_cov_distances = checkpoint['cluster_cov_distances']
+    log_ps = checkpoint['log_ps']
+    kls = checkpoint['kls']
+    return (
+        generative_model, inference_network, theta_losses, phi_losses,
+        cluster_cov_distances, log_ps, kls)

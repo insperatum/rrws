@@ -2,13 +2,16 @@ import torch
 import losses
 import util
 import itertools
+import models
 
 
 def train_mws(generative_model, inference_network, data_loader,
-              num_iterations, memory_size):
+              num_iterations, memory_size, true_cluster_cov,
+              test_data_loader, test_num_particles):
     optimizer = torch.optim.Adam(itertools.chain(
         generative_model.parameters(), inference_network.parameters()))
-    theta_losses, phi_losses = [], []
+    (theta_losses, phi_losses, cluster_cov_distances,
+     log_ps, kls) = [], [], [], [], []
 
     memory = {}
     data_loader_iter = iter(data_loader)
@@ -105,21 +108,30 @@ def train_mws(generative_model, inference_network, data_loader,
 
         theta_losses.append(theta_loss.item())
         phi_losses.append(phi_loss.item())
+        cluster_cov_distances.append(torch.norm(
+            true_cluster_cov - generative_model.get_cluster_cov()
+        ).item())
+        log_p, kl = models.eval_gen_inf(
+            generative_model, inference_network,
+            test_data_loader, test_num_particles)
+        log_ps.append(log_p)
+        kls.append(kl)
         util.print_with_time(
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
                 iteration, theta_loss, phi_loss))
 
-    return theta_losses, phi_losses
+    return theta_losses, phi_losses, cluster_cov_distances, log_ps, kls
 
 
 def train_rws(generative_model, inference_network, data_loader,
-              num_iterations, num_particles):
+              num_iterations, num_particles, true_cluster_cov,
+              test_data_loader, test_num_particles):
     optimizer_phi = torch.optim.Adam(inference_network.parameters())
     optimizer_theta = torch.optim.Adam(generative_model.parameters())
+    (theta_losses, phi_losses, cluster_cov_distances,
+     log_ps, kls) = [], [], [], [], []
     data_loader_iter = iter(data_loader)
 
-    theta_losses = []
-    phi_losses = []
     for iteration in range(num_iterations):
         # get obs
         try:
@@ -149,8 +161,16 @@ def train_rws(generative_model, inference_network, data_loader,
 
         theta_losses.append(wake_theta_loss)
         phi_losses.append(wake_phi_loss)
+        cluster_cov_distances.append(torch.norm(
+            true_cluster_cov - generative_model.get_cluster_cov()
+        ).item())
+        log_p, kl = models.eval_gen_inf(
+            generative_model, inference_network,
+            test_data_loader, test_num_particles)
+        log_ps.append(log_p)
+        kls.append(kl)
         util.print_with_time(
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
                 iteration, wake_theta_loss, wake_phi_loss))
 
-    return theta_losses, phi_losses
+    return theta_losses, phi_losses, cluster_cov_distances, log_ps, kls
