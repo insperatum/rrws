@@ -29,14 +29,19 @@ def run(args):
         batch_size=args.batch_size, shuffle=True)
 
     # train
-    train.train_wake_wake(generative_model, inference_network, data_loader,
-                          args.num_iterations, args.num_particles)
+    if args.algorithm == 'mws':
+        train.train_mws(generative_model, inference_network, data_loader,
+                        args.num_iterations, args.memory_size)
+    elif args.algorithm == 'rws':
+        train.train_rws(generative_model, inference_network, data_loader,
+                        args.num_iterations, args.num_particles)
 
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser.add_argument('--algorithm', default='mws', help='rws or mws')
     parser.add_argument('--cuda', action='store_true', help='use cuda')
     parser.add_argument('--batch-size', type=int, default=10, help=' ')
     parser.add_argument('--num-dim', type=int, default=2, help=' ')
@@ -46,5 +51,6 @@ if __name__ == '__main__':
     parser.add_argument('--num-test', type=int, default=100, help=' ')
     parser.add_argument('--num-iterations', type=int, default=7, help=' ')
     parser.add_argument('--num-particles', type=int, default=13, help=' ')
+    parser.add_argument('--memory-size', type=int, default=13, help=' ')
     args = parser.parse_args()
     run(args)
