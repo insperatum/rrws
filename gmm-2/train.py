@@ -2,13 +2,13 @@ import torch
 import losses
 import util
 import itertools
-print = util.print_with_time
 
 
 def train_mws(generative_model, inference_network, data_loader,
-              num_iterations, memory_size, callback=None):
+              num_iterations, memory_size):
     optimizer = torch.optim.Adam(itertools.chain(
         generative_model.parameters(), inference_network.parameters()))
+    theta_losses, phi_losses = [], []
 
     memory = {}
     data_loader_iter = iter(data_loader)
@@ -103,10 +103,13 @@ def train_mws(generative_model, inference_network, data_loader,
         phi_loss.backward()
         optimizer.step()
 
-        print('it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
-            iteration, theta_loss, phi_loss))
+        theta_losses.append(theta_loss.item())
+        phi_losses.append(phi_loss.item())
+        util.print_with_time(
+            'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
+                iteration, theta_loss, phi_loss))
 
-    return optimizer
+    return theta_losses, phi_losses
 
 
 def train_rws(generative_model, inference_network, data_loader,
@@ -115,6 +118,8 @@ def train_rws(generative_model, inference_network, data_loader,
     optimizer_theta = torch.optim.Adam(generative_model.parameters())
     data_loader_iter = iter(data_loader)
 
+    theta_losses = []
+    phi_losses = []
     for iteration in range(num_iterations):
         # get obs
         try:
@@ -142,7 +147,10 @@ def train_rws(generative_model, inference_network, data_loader,
         wake_phi_loss.backward()
         optimizer_phi.step()
 
-        print('it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
-            iteration, wake_theta_loss, wake_phi_loss))
+        theta_losses.append(wake_theta_loss)
+        phi_losses.append(wake_phi_loss)
+        util.print_with_time(
+            'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
+                iteration, wake_theta_loss, wake_phi_loss))
 
-    return optimizer_theta, optimizer_phi
+    return theta_losses, phi_losses

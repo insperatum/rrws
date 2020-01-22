@@ -17,9 +17,7 @@ def run(args):
 
     # init
     true_cluster_cov = torch.eye(args.num_dim, device=device) * 0.001
-    (generative_model, inference_network, optimizer_theta,
-     optimizer_phi, true_generative_model, theta_losses,
-     phi_losses) = util.init(
+    generative_model, inference_network, true_generative_model = util.init(
         args.num_data, args.num_clusters, args.num_dim, true_cluster_cov,
         device)
 
@@ -30,11 +28,19 @@ def run(args):
 
     # train
     if args.algorithm == 'mws':
-        train.train_mws(generative_model, inference_network, data_loader,
-                        args.num_iterations, args.memory_size)
+        theta_losses, phi_losses = train.train_mws(
+            generative_model, inference_network, data_loader,
+            args.num_iterations, args.memory_size)
     elif args.algorithm == 'rws':
-        train.train_rws(generative_model, inference_network, data_loader,
-                        args.num_iterations, args.num_particles)
+        theta_losses, phi_losses = train.train_rws(
+            generative_model, inference_network, data_loader,
+            args.num_iterations, args.num_particles)
+
+    # save model
+    checkpoint_path = '{}_{}.pt'.format(
+        args.checkpoint_path_prefix, args.algorithm)
+    util.save_checkpoint(checkpoint_path, generative_model, inference_network,
+                         theta_losses, phi_losses)
 
 
 if __name__ == '__main__':
@@ -52,5 +58,7 @@ if __name__ == '__main__':
     parser.add_argument('--num-iterations', type=int, default=7, help=' ')
     parser.add_argument('--num-particles', type=int, default=13, help=' ')
     parser.add_argument('--memory-size', type=int, default=13, help=' ')
+    parser.add_argument('--checkpoint-path-prefix', default='checkpoint',
+                        help=' ')
     args = parser.parse_args()
     run(args)

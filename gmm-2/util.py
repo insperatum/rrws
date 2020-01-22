@@ -60,14 +60,37 @@ def init(num_data, num_clusters, num_dim, true_cluster_cov, device):
         num_data, num_clusters, prior_loc, prior_cov, device).to(device)
     inference_network = models.InferenceNetwork(
         num_data, num_clusters, num_dim).to(device)
-    optimizer_theta = torch.optim.Adam(generative_model.parameters())
-    optimizer_phi = torch.optim.Adam(inference_network.parameters())
-
     true_generative_model = models.GenerativeModel(
         num_data, num_clusters, prior_loc, prior_cov, device,
         true_cluster_cov).to(device)
 
-    theta_losses = []
-    phi_losses = []
-    return (generative_model, inference_network, optimizer_theta,
-            optimizer_phi, true_generative_model, theta_losses, phi_losses)
+    return (generative_model, inference_network, true_generative_model)
+
+
+def save_checkpoint(path, generative_model, inference_network, theta_losses,
+                    phi_losses):
+    torch.save({
+        'generative_model_state_dict': generative_model.state_dict(),
+        'inference_network_state_dict': inference_network.state_dict(),
+        'theta_losses': theta_losses,
+        'phi_losses': phi_losses,
+        'num_data': generative_model.num_data,
+        'num_clusters': generative_model.num_clusters,
+        'num_dim': generative_model.num_dim
+    }, path)
+    print_with_time('Saved checkpoint to {}'.format(path))
+
+
+def load_checkpoint(path, device):
+    checkpoint = torch.load(path, map_location=device)
+
+    true_cluster_cov = torch.eye(checkpoint['num_dim'], device=device)
+    generative_model, inference_network, _ = init(
+        checkpoint['num_data'], checkpoint['num_clusters'],
+        checkpoint['num_dim'], true_cluster_cov, device)
+
+    generative_model.load_state_dict(checkpoint['generative_model_state_dict'])
+    inference_network.load_state_dict(checkpoint['inference_network_state_dict'])
+    theta_losses = checkpoint['theta_losses']
+    phi_losses = checkpoint['phi_losses']
+    return generative_model, inference_network, theta_losses, phi_losses
