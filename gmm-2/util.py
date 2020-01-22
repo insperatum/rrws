@@ -1,6 +1,9 @@
 import torch
 import datetime
 import models
+import os
+from pathlib import Path
+from matplotlib import pyplot as plt
 
 
 def lognormexp(values, dim=0):
@@ -51,6 +54,23 @@ def get_hhmmss():
 
 def print_with_time(str):
     print(get_yyyymmdd() + ' ' + get_hhmmss() + ' ' + str)
+
+
+def save_plot(filename, x, label):
+    os.makedirs(Path(filename).parent, exist_ok=True)
+    plt.clf()
+    s = 3
+    plt.figure(figsize=(s*len(x), s))
+    lim = x.abs().ceil().max()
+
+    for i, (x_i, label_i) in enumerate(zip(x, label)):
+        plt.subplot(1, len(x), i+1)
+        x_i = x_i.reshape(-1, 2)
+        for j in range(label_i.max()+1):
+            plt.scatter(x_i[label_i == j, 0], x_i[label_i == j, 1])
+            plt.xlim([-lim, lim])
+            plt.ylim([-lim, lim])
+    plt.savefig(filename)
 
 
 def init(num_data, num_clusters, num_dim, true_cluster_cov, device):

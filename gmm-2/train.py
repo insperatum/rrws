@@ -4,7 +4,6 @@ import util
 import itertools
 import models
 
-
 def train_mws(generative_model, inference_network, data_loader,
               num_iterations, memory_size, true_cluster_cov,
               test_data_loader, test_num_particles):
@@ -122,6 +121,10 @@ def train_mws(generative_model, inference_network, data_loader,
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
                 iteration, theta_loss, phi_loss))
 
+        if iteration % 200 == 0:
+            z = inference_network.get_latent_dist(obs).sample()
+            util.save_plot("images/mws/iteration_{}.png".format(iteration), obs[:3], z[:3])
+
     return theta_losses, phi_losses, cluster_cov_distances, log_ps, kls
 
 
@@ -175,5 +178,9 @@ def train_rws(generative_model, inference_network, data_loader,
         util.print_with_time(
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
                 iteration, wake_theta_loss, wake_phi_loss))
+
+        if iteration % 200 == 0:
+            z = inference_network.get_latent_dist(obs).sample()
+            util.save_plot("images/rws/iteration_{}.png".format(iteration), obs[:3], z[:3])
 
     return theta_losses, phi_losses, cluster_cov_distances, log_ps, kls
