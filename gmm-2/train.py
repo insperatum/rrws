@@ -111,11 +111,13 @@ def train_mws(generative_model, inference_network, data_loader,
         cluster_cov_distances.append(torch.norm(
             true_cluster_cov - generative_model.get_cluster_cov()
         ).item())
-        log_p, kl = models.eval_gen_inf(
-            generative_model, inference_network,
-            test_data_loader, test_num_particles)
-        log_ps.append(log_p)
-        kls.append(kl)
+
+        if iteration % 100 == 0:  # test every 100 iterations
+            log_p, kl = models.eval_gen_inf(
+                generative_model, inference_network,
+                test_data_loader, test_num_particles)
+            log_ps.append(log_p)
+            kls.append(kl)
         util.print_with_time(
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
                 iteration, theta_loss, phi_loss))
@@ -164,11 +166,12 @@ def train_rws(generative_model, inference_network, data_loader,
         cluster_cov_distances.append(torch.norm(
             true_cluster_cov - generative_model.get_cluster_cov()
         ).item())
-        log_p, kl = models.eval_gen_inf(
-            generative_model, inference_network,
-            test_data_loader, test_num_particles)
-        log_ps.append(log_p)
-        kls.append(kl)
+        if iteration % 100 == 0:  # test every 100 iterations
+            log_p, kl = models.eval_gen_inf(
+                generative_model, inference_network,
+                test_data_loader, test_num_particles)
+            log_ps.append(log_p)
+            kls.append(kl)
         util.print_with_time(
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
                 iteration, wake_theta_loss, wake_phi_loss))
