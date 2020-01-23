@@ -7,7 +7,7 @@ import models
 
 def train_mws(generative_model, inference_network, data_loader,
               num_iterations, memory_size, true_cluster_cov,
-              test_data_loader, test_num_particles):
+              test_data_loader, test_num_particles, checkpoint_path):
     optimizer = torch.optim.Adam(itertools.chain(
         generative_model.parameters(), inference_network.parameters()))
     (theta_losses, phi_losses, cluster_cov_distances,
@@ -130,6 +130,11 @@ def train_mws(generative_model, inference_network, data_loader,
             train_log_ps.append(train_log_p)
             train_kls.append(train_kl)
 
+            util.save_checkpoint(
+                checkpoint_path, generative_model, inference_network,
+                theta_losses, phi_losses, cluster_cov_distances,
+                test_log_ps, test_kls, train_log_ps, train_kls)
+
         util.print_with_time(
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
                 iteration, theta_loss, phi_loss))
@@ -145,7 +150,7 @@ def train_mws(generative_model, inference_network, data_loader,
 
 def train_rws(generative_model, inference_network, data_loader,
               num_iterations, num_particles, true_cluster_cov,
-              test_data_loader, test_num_particles):
+              test_data_loader, test_num_particles, checkpoint_path):
     optimizer_phi = torch.optim.Adam(inference_network.parameters())
     optimizer_theta = torch.optim.Adam(generative_model.parameters())
     (theta_losses, phi_losses, cluster_cov_distances,
@@ -197,6 +202,12 @@ def train_rws(generative_model, inference_network, data_loader,
                 data_loader, test_num_particles)
             train_log_ps.append(train_log_p)
             train_kls.append(train_kl)
+
+            util.save_checkpoint(
+                checkpoint_path, generative_model, inference_network,
+                theta_losses, phi_losses, cluster_cov_distances,
+                test_log_ps, test_kls, train_log_ps, train_kls)
+
         util.print_with_time(
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
                 iteration, wake_theta_loss, wake_phi_loss))
