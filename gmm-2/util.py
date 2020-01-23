@@ -4,6 +4,8 @@ import models
 import os
 from pathlib import Path
 from matplotlib import pyplot as plt
+# hack for https://github.com/dmlc/xgboost/issues/1715
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 
 def lognormexp(values, dim=0):
@@ -88,7 +90,8 @@ def init(num_data, num_dim, true_cluster_cov, device):
 
 
 def save_checkpoint(path, generative_model, inference_network, theta_losses,
-                    phi_losses, cluster_cov_distances, log_ps, kls):
+                    phi_losses, cluster_cov_distances,
+                    test_log_ps, test_kls, train_log_ps, train_kls):
     torch.save({
         'generative_model_state_dict': generative_model.state_dict(),
         'inference_network_state_dict': inference_network.state_dict(),
@@ -97,8 +100,10 @@ def save_checkpoint(path, generative_model, inference_network, theta_losses,
         'num_data': generative_model.num_data,
         'num_dim': generative_model.num_dim,
         'cluster_cov_distances': cluster_cov_distances,
-        'log_ps': log_ps,
-        'kls': kls
+        'test_log_ps': test_log_ps,
+        'test_kls': test_kls,
+        'train_log_ps': train_log_ps,
+        'train_kls': train_kls
     }, path)
     print_with_time('Saved checkpoint to {}'.format(path))
 
@@ -117,8 +122,10 @@ def load_checkpoint(path, device):
     theta_losses = checkpoint['theta_losses']
     phi_losses = checkpoint['phi_losses']
     cluster_cov_distances = checkpoint['cluster_cov_distances']
-    log_ps = checkpoint['log_ps']
-    kls = checkpoint['kls']
-    return (
-        generative_model, inference_network, theta_losses, phi_losses,
-        cluster_cov_distances, log_ps, kls)
+    test_log_ps = checkpoint['test_log_ps']
+    test_kls = checkpoint['test_kls']
+    train_log_ps = checkpoint['train_log_ps']
+    train_kls = checkpoint['train_kls']
+    return (generative_model, inference_network, theta_losses, phi_losses,
+            cluster_cov_distances, test_log_ps, test_kls, train_log_ps,
+            train_kls)

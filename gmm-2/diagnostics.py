@@ -3,49 +3,67 @@ import torch
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
+
+
+def moving_average(x, width=10):
+    return np.convolve(x, np.ones(width) / width, 'valid')
 
 
 def main(args):
     if not os.path.exists(args.diagnostics_dir):
         os.makedirs(args.diagnostics_dir)
 
-    fig, axs = plt.subplots(1, 5, figsize=(15, 3), dpi=100)
+    fig, axs = plt.subplots(1, 7, figsize=(7 * 3, 3), dpi=100)
     for algorithm in ['mws', 'rws']:
         checkpoint_path = '{}_{}.pt'.format(
             args.checkpoint_path_prefix, algorithm)
-        (_, _, theta_losses, phi_losses,
-         cluster_cov_distances, log_ps, kls) = util.load_checkpoint(
+        (_, _, theta_losses, phi_losses, cluster_cov_distances,
+         test_log_ps, test_kls, train_log_ps,
+         train_kls) = util.load_checkpoint(
             checkpoint_path, torch.device('cpu'))
 
         ax = axs[0]
-        ax.plot(theta_losses, label=algorithm)
+        ax.plot(moving_average(theta_losses), label=algorithm)
         ax.set_xlabel('iteration')
         ax.set_ylabel('theta loss')
         ax.set_xticks([0, len(theta_losses) - 1])
 
         ax = axs[1]
-        ax.plot(phi_losses, label=algorithm)
+        ax.plot(moving_average(phi_losses), label=algorithm)
         ax.set_xlabel('iteration')
         ax.set_ylabel('phi loss')
         ax.set_xticks([0, len(phi_losses) - 1])
 
         ax = axs[2]
         ax.plot(cluster_cov_distances, label=algorithm)
-        ax.set_xlabel('iteration')
+        ax.set_xlabel('iteration / 100')
         ax.set_ylabel('cluster cov distance')
         ax.set_xticks([0, len(cluster_cov_distances) - 1])
 
         ax = axs[3]
-        ax.plot(log_ps, label=algorithm)
-        ax.set_xlabel('iteration')
+        ax.plot(test_log_ps, label=algorithm)
+        ax.set_xlabel('iteration / 100')
         ax.set_ylabel('test log p')
-        ax.set_xticks([0, len(log_ps) - 1])
+        ax.set_xticks([0, len(test_log_ps) - 1])
 
         ax = axs[4]
-        ax.plot(kls, label=algorithm)
-        ax.set_xlabel('iteration')
+        ax.plot(test_kls, label=algorithm)
+        ax.set_xlabel('iteration / 100')
         ax.set_ylabel('test KL')
-        ax.set_xticks([0, len(kls) - 1])
+        ax.set_xticks([0, len(test_kls) - 1])
+
+        ax = axs[5]
+        ax.plot(train_log_ps, label=algorithm)
+        ax.set_xlabel('iteration / 100')
+        ax.set_ylabel('train log p')
+        ax.set_xticks([0, len(train_log_ps) - 1])
+
+        ax = axs[6]
+        ax.plot(train_kls, label=algorithm)
+        ax.set_xlabel('iteration / 100')
+        ax.set_ylabel('train KL')
+        ax.set_xticks([0, len(train_kls) - 1])
 
     axs[-1].legend()
     for ax in axs:
