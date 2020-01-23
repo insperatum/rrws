@@ -47,6 +47,24 @@ class ClusterDist(torch.distributions.Distribution):
     def event_shape(self):
         return torch.Size([self.num_data])
 
+    def enumerate(self):
+        if not hasattr(self, "_enumerate"):
+            def get_z_by_max(n):
+                if n == 1:
+                    return [torch.Tensor([[0]]).long()]
+                else:
+                    z_by_max = [[] for _ in range(n)]
+                    for old_max, old_z in enumerate(get_z_by_max(n - 1)):
+                        for new_elem in range(old_max + 2):
+                            new_max = max(old_max, new_elem)
+                            new_zs = torch.cat([old_z, torch.ones(len(old_z), 1).long() * new_elem], dim=-1)
+                            z_by_max[new_max].append(new_zs)
+                    z_by_max = [torch.cat(zs, dim=0) for zs in z_by_max]
+                    return z_by_max
+
+            self._enumerate = torch.cat(get_z_by_max(self.num_data), dim=0)
+        return self._enumerate
+
 
 class CRP(ClusterDist):
     def __init__(self, num_data):
@@ -74,9 +92,9 @@ class MaskedSoftmaxClustering(ClusterDist):
             z: tensor [*sample_shape, *batch_shape, num_datapoints_so_far]
         Returns: distribution with batch_shape [*sample_shape, *batch_shape] and event_shape []
         """
-        assert tuple(z.shape[-len(self.batch_shape)-1:-1]) == tuple(self.batch_shape)
+        assert tuple(z.shape[-len(self.batch_shape) - 1:-1]) == tuple(self.batch_shape)
         sample_shape = z.shape[:-len(self.batch_shape) - 1]
-        
+
         # count: tensor [*sample_shape *batch_shape, num_clusters] -- how many times has each cluster been used
         count = (z[..., None, :] == torch.arange(self.logits.shape[-1])[:, None]).sum(dim=-1).float()
 
@@ -100,14 +118,16 @@ if __name__ == "__main__":
 
     print("--- CRP ---")
     crp = CRP(num_data)
+    print("Support size = ", len(crp.enumerate()))
     z = crp.sample([batch_size])
     print("z =", z)
     log_prob = crp.log_prob(z)
     print("log_prob =", log_prob)
 
     print("\n--- Softmax ---")
-    softmax_clustering = MaskedSoftmaxClustering(logits=torch.randn(3, batch_size, num_data, num_data))
-    z = crp.sample()
+    softmax_clustering = MaskedSoftmaxClustering(logits=torch.randn(batch_size, num_data, num_data))
+    print("Support size = ", len(softmax_clustering.enumerate()))
+    z = softmax_clustering.sample()
     print("z =", z)
-    log_prob = crp.log_prob(z)
+    log_prob = softmax_clustering.log_prob(z)
     print("log_prob =", log_prob)
