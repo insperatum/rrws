@@ -16,12 +16,14 @@ def run(args):
     util.print_with_time('args = {}'.format(args))
 
     # init
+    util.print_with_time('init')
     true_cluster_cov = torch.eye(args.num_dim, device=device) * 0.03
     generative_model, inference_network, true_generative_model = util.init(
-        args.num_data, args.num_clusters, args.num_dim, true_cluster_cov,
+        args.num_data, args.num_dim, true_cluster_cov,
         device)
 
     # data
+    util.print_with_time('data')
     data_loader = torch.utils.data.DataLoader(
         true_generative_model.sample_obs(args.num_train),
         batch_size=args.batch_size, shuffle=True)
@@ -30,6 +32,7 @@ def run(args):
         batch_size=args.batch_size, shuffle=True)
 
     # train
+    util.print_with_time('train')
     if args.algorithm == 'mws':
         (theta_losses, phi_losses, cluster_cov_distances,
          log_ps, kls) = train.train_mws(
@@ -57,14 +60,13 @@ if __name__ == '__main__':
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
     parser.add_argument('--algorithm', default='mws', help='rws or mws')
     parser.add_argument('--cuda', action='store_true', help='use cuda')
-    parser.add_argument('--batch-size', type=int, default=50, help=' ')
+    parser.add_argument('--batch-size', type=int, default=20, help=' ')
     parser.add_argument('--num-dim', type=int, default=2, help=' ')
-    parser.add_argument('--num-clusters', type=int, default=3, help=' ')
     parser.add_argument('--num-data', type=int, default=10, help=' ')
     parser.add_argument('--num-train', type=int, default=100, help=' ')
     parser.add_argument('--num-iterations', type=int, default=10000, help=' ')
-    parser.add_argument('--num-particles', type=int, default=10, help=' ')
-    parser.add_argument('--memory-size', type=int, default=10, help=' ')
+    parser.add_argument('--num-particles', type=int, default=5, help=' ')
+    parser.add_argument('--memory-size', type=int, default=5, help=' ')
     parser.add_argument('--num-test', type=int, default=100, help=' ')
     parser.add_argument('--test-num-particles', type=int, default=100,
                         help=' ')

@@ -3,6 +3,8 @@ import torch.nn as nn
 import losses
 import math
 
+from clusterdist import CRP, MaskedSoftmaxClustering
+
 
 def batched_kronecker(A, B):
     """
@@ -19,19 +21,16 @@ def batched_kronecker(A, B):
 
 
 class GenerativeModel(nn.Module):
-    def __init__(self, num_data, num_clusters, prior_loc, prior_cov,
+    def __init__(self, num_data, prior_loc, prior_cov,
                  device, cluster_cov=None):
         super(GenerativeModel, self).__init__()
         self.num_data = num_data
-        self.num_clusters = num_clusters
         self.prior_loc = prior_loc
         self.prior_cov = prior_cov
         self.num_dim = len(self.prior_loc)
         self.pre_cluster_cov = nn.Parameter(
             torch.eye(self.num_dim, device=device))
         self.cluster_cov = cluster_cov
-        self.latent_logits = torch.ones(self.num_data, self.num_clusters,
-                                        device=device)
         self.device = device
 
     def get_cluster_cov(self):
@@ -44,10 +43,7 @@ class GenerativeModel(nn.Module):
         """Returns: distribution with batch shape [] and event shape
             [num_data].
         """
-        return torch.distributions.Independent(
-            torch.distributions.Categorical(
-                logits=self.latent_logits),
-            reinterpreted_batch_ndims=1)
+        return CRP(self.num_data)
 
     def get_obs_dist(self, latent):
         """
@@ -125,17 +121,14 @@ class GenerativeModel(nn.Module):
 
 
 class InferenceNetwork(nn.Module):
-    def __init__(self, num_data, num_clusters, num_dim):
+    def __init__(self, num_data, num_dim):
         super(InferenceNetwork, self).__init__()
         self.num_data = num_data
-        self.num_clusters = num_clusters
         self.num_dim = num_dim
         self.mlp = nn.Sequential(
             nn.Linear(self.num_data * self.num_dim, 16),
             nn.Tanh(),
-            nn.Linear(16, 16),
-            nn.Tanh(),
-            nn.Linear(16, self.num_data * self.num_clusters))
+            nn.Linear(16, self.num_data * self.num_data))
 
     def get_latent_params(self, obs):
         """Args:
@@ -144,7 +137,7 @@ class InferenceNetwork(nn.Module):
         Returns: tensor of shape [batch_size, num_data, num_clusters]
         """
         return self.mlp(obs).reshape(
-            -1, self.num_data, self.num_clusters)
+            -1, self.num_data, self.num_data)
 
     def get_latent_dist(self, obs):
         """Args:
@@ -154,9 +147,7 @@ class InferenceNetwork(nn.Module):
             [num_data]
         """
         logits = self.get_latent_params(obs)
-        return torch.distributions.Independent(
-            torch.distributions.Categorical(logits=logits),
-            reinterpreted_batch_ndims=1)
+        return MaskedSoftmaxClustering(logits=logits)
 
     def sample_from_latent_dist(self, latent_dist, num_particles):
         """Samples from q(latent | obs)
@@ -181,7 +172,6 @@ class InferenceNetwork(nn.Module):
 
         Returns: tensor of shape [num_particles, batch_size]
         """
-
         return latent_dist.log_prob(latent)
 
     def get_log_prob(self, latent, obs):

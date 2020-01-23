@@ -90,7 +90,7 @@ def train_mws(generative_model, inference_network, data_loader,
             ).sample()
             remembered_latent = memory[single_obs_key][remembered_latent_id]
             remembered_latent_tensor = torch.tensor(
-                remembered_latent,
+                [remembered_latent],
                 device=single_obs.device)
             # []
             theta_loss += -log_p.get(remembered_latent) / len(obs)
