@@ -14,13 +14,14 @@ def main(args):
     if not os.path.exists(args.diagnostics_dir):
         os.makedirs(args.diagnostics_dir)
 
-    fig, axs = plt.subplots(1, 7, figsize=(7 * 3, 3), dpi=100)
+    fig, axs = plt.subplots(1, 15, figsize=(15 * 3, 3), dpi=100)
     for algorithm in ['mws', 'rws']:
         checkpoint_path = '{}_{}.pt'.format(
             args.checkpoint_path_prefix, algorithm)
         (_, _, theta_losses, phi_losses, cluster_cov_distances,
-         test_log_ps, test_kls, train_log_ps,
-         train_kls) = util.load_checkpoint(
+         test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
+         train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true,
+         train_kl_pqs_true) = util.load_checkpoint(
             checkpoint_path, torch.device('cpu'))
 
         ax = axs[0]
@@ -48,22 +49,70 @@ def main(args):
         ax.set_xticks([0, len(test_log_ps) - 1])
 
         ax = axs[4]
-        ax.plot(test_kls, label=algorithm)
+        ax.plot(test_log_ps_true, label=algorithm)
         ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('test KL')
-        ax.set_xticks([0, len(test_kls) - 1])
+        ax.set_ylabel('test log p true')
+        ax.set_xticks([0, len(test_log_ps_true) - 1])
 
         ax = axs[5]
+        ax.plot(test_kl_qps, label=algorithm)
+        ax.set_xlabel('iteration / 100')
+        ax.set_ylabel('test kl(q, p)')
+        ax.set_xticks([0, len(test_kl_qps) - 1])
+
+        ax = axs[6]
+        ax.plot(test_kl_pqs, label=algorithm)
+        ax.set_xlabel('iteration / 100')
+        ax.set_ylabel('test kl(p, q)')
+        ax.set_xticks([0, len(test_kl_pqs) - 1])
+
+        ax = axs[7]
+        ax.plot(test_kl_qps_true, label=algorithm)
+        ax.set_xlabel('iteration / 100')
+        ax.set_ylabel('test kl(q, p true)')
+        ax.set_xticks([0, len(test_kl_qps_true) - 1])
+
+        ax = axs[8]
+        ax.plot(test_kl_pqs_true, label=algorithm)
+        ax.set_xlabel('iteration / 100')
+        ax.set_ylabel('test kl(p true, q)')
+        ax.set_xticks([0, len(test_kl_pqs_true) - 1])
+
+        ax = axs[9]
         ax.plot(train_log_ps, label=algorithm)
         ax.set_xlabel('iteration / 100')
         ax.set_ylabel('train log p')
         ax.set_xticks([0, len(train_log_ps) - 1])
 
-        ax = axs[6]
-        ax.plot(train_kls, label=algorithm)
+        ax = axs[10]
+        ax.plot(train_log_ps_true, label=algorithm)
         ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('train KL')
-        ax.set_xticks([0, len(train_kls) - 1])
+        ax.set_ylabel('train log p true')
+        ax.set_xticks([0, len(train_log_ps_true) - 1])
+
+        ax = axs[11]
+        ax.plot(train_kl_qps, label=algorithm)
+        ax.set_xlabel('iteration / 100')
+        ax.set_ylabel('train kl(q, p)')
+        ax.set_xticks([0, len(train_kl_qps) - 1])
+
+        ax = axs[12]
+        ax.plot(train_kl_pqs, label=algorithm)
+        ax.set_xlabel('iteration / 100')
+        ax.set_ylabel('train kl(p, q)')
+        ax.set_xticks([0, len(train_kl_pqs) - 1])
+
+        ax = axs[13]
+        ax.plot(train_kl_qps_true, label=algorithm)
+        ax.set_xlabel('iteration / 100')
+        ax.set_ylabel('train kl(q, p true)')
+        ax.set_xticks([0, len(train_kl_qps_true) - 1])
+
+        ax = axs[14]
+        ax.plot(train_kl_pqs_true, label=algorithm)
+        ax.set_xlabel('iteration / 100')
+        ax.set_ylabel('train kl(p true, q)')
+        ax.set_xticks([0, len(train_kl_pqs_true) - 1])
 
     axs[-1].legend()
     for ax in axs:

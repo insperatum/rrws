@@ -7,12 +7,14 @@ import models
 
 def train_mws(generative_model, inference_network, data_loader,
               num_iterations, memory_size, true_cluster_cov,
-              test_data_loader, test_num_particles, checkpoint_path):
+              test_data_loader, test_num_particles, true_generative_model,
+              checkpoint_path):
     optimizer = torch.optim.Adam(itertools.chain(
         generative_model.parameters(), inference_network.parameters()))
     (theta_losses, phi_losses, cluster_cov_distances,
-     test_log_ps, test_kls, train_log_ps, train_kls) = \
-        [], [], [], [], [], [], []
+     test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
+     train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true) = \
+        [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
 
     memory = {}
     data_loader_iter = iter(data_loader)
@@ -118,22 +120,33 @@ def train_mws(generative_model, inference_network, data_loader,
         ).item())
 
         if iteration % 100 == 0:  # test every 100 iterations
-            test_log_p, test_kl = models.eval_gen_inf(
-                generative_model, inference_network,
-                test_data_loader, test_num_particles)
+            (test_log_p, test_log_p_true,
+             test_kl_qp, test_kl_pq, test_kl_qp_true, test_kl_pq_true) = models.eval_gen_inf(
+                true_generative_model, generative_model, inference_network,
+                test_data_loader)
             test_log_ps.append(test_log_p)
-            test_kls.append(test_kl)
+            test_log_ps_true.append(test_log_p_true)
+            test_kl_qps.append(test_kl_qp)
+            test_kl_pqs.append(test_kl_pq)
+            test_kl_qps_true.append(test_kl_qp_true)
+            test_kl_pqs_true.append(test_kl_pq_true)
 
-            train_log_p, train_kl = models.eval_gen_inf(
-                generative_model, inference_network,
-                data_loader, test_num_particles)
+            (train_log_p, train_log_p_true,
+             train_kl_qp, train_kl_pq, train_kl_qp_true, train_kl_pq_true) = models.eval_gen_inf(
+                true_generative_model, generative_model, inference_network,
+                data_loader)
             train_log_ps.append(train_log_p)
-            train_kls.append(train_kl)
+            train_log_ps_true.append(train_log_p_true)
+            train_kl_qps.append(train_kl_qp)
+            train_kl_pqs.append(train_kl_pq)
+            train_kl_qps_true.append(train_kl_qp_true)
+            train_kl_pqs_true.append(train_kl_pq_true)
 
             util.save_checkpoint(
                 checkpoint_path, generative_model, inference_network,
                 theta_losses, phi_losses, cluster_cov_distances,
-                test_log_ps, test_kls, train_log_ps, train_kls)
+                test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
+                train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true)
 
         util.print_with_time(
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
@@ -145,17 +158,20 @@ def train_mws(generative_model, inference_network, data_loader,
                            obs[:3], z[:3])
 
     return (theta_losses, phi_losses, cluster_cov_distances,
-            test_log_ps, test_kls, train_log_ps, train_kls)
+            test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
+            train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true)
 
 
 def train_rws(generative_model, inference_network, data_loader,
               num_iterations, num_particles, true_cluster_cov,
-              test_data_loader, test_num_particles, checkpoint_path):
+              test_data_loader, test_num_particles, true_generative_model,
+              checkpoint_path):
     optimizer_phi = torch.optim.Adam(inference_network.parameters())
     optimizer_theta = torch.optim.Adam(generative_model.parameters())
     (theta_losses, phi_losses, cluster_cov_distances,
-     test_log_ps, test_kls, train_log_ps, train_kls) = \
-        [], [], [], [], [], [], []
+     test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
+     train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true) = \
+        [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
     data_loader_iter = iter(data_loader)
 
     for iteration in range(num_iterations):
@@ -191,22 +207,33 @@ def train_rws(generative_model, inference_network, data_loader,
             true_cluster_cov - generative_model.get_cluster_cov()
         ).item())
         if iteration % 100 == 0:  # test every 100 iterations
-            test_log_p, test_kl = models.eval_gen_inf(
-                generative_model, inference_network,
-                test_data_loader, test_num_particles)
+            (test_log_p, test_log_p_true,
+             test_kl_qp, test_kl_pq, test_kl_qp_true, test_kl_pq_true) = models.eval_gen_inf(
+                true_generative_model, generative_model, inference_network,
+                test_data_loader)
             test_log_ps.append(test_log_p)
-            test_kls.append(test_kl)
+            test_log_ps_true.append(test_log_p_true)
+            test_kl_qps.append(test_kl_qp)
+            test_kl_pqs.append(test_kl_pq)
+            test_kl_qps_true.append(test_kl_qp_true)
+            test_kl_pqs_true.append(test_kl_pq_true)
 
-            train_log_p, train_kl = models.eval_gen_inf(
-                generative_model, inference_network,
-                data_loader, test_num_particles)
+            (train_log_p, train_log_p_true,
+             train_kl_qp, train_kl_pq, train_kl_qp_true, train_kl_pq_true) = models.eval_gen_inf(
+                true_generative_model, generative_model, inference_network,
+                data_loader)
             train_log_ps.append(train_log_p)
-            train_kls.append(train_kl)
+            train_log_ps_true.append(train_log_p_true)
+            train_kl_qps.append(train_kl_qp)
+            train_kl_pqs.append(train_kl_pq)
+            train_kl_qps_true.append(train_kl_qp_true)
+            train_kl_pqs_true.append(train_kl_pq_true)
 
             util.save_checkpoint(
                 checkpoint_path, generative_model, inference_network,
                 theta_losses, phi_losses, cluster_cov_distances,
-                test_log_ps, test_kls, train_log_ps, train_kls)
+                test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
+                train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true)
 
         util.print_with_time(
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
@@ -218,4 +245,5 @@ def train_rws(generative_model, inference_network, data_loader,
                            obs[:3], z[:3])
 
     return (theta_losses, phi_losses, cluster_cov_distances,
-            test_log_ps, test_kls, train_log_ps, train_kls)
+            test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
+            train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true)

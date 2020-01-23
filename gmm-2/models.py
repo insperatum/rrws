@@ -210,13 +210,57 @@ def get_log_p_and_kl(generative_model, inference_network, obs, num_particles):
     return log_p, kl
 
 
-def eval_gen_inf(generative_model, guide, data_loader, num_particles):
-    log_p_total = 0
-    kl_total = 0
+def get_log_p_and_kl_enumerate(true_generative_model, generative_model, inference_network, obs):
+    """
+    Args:
+        true_generative_model: models.GenerativeModel object
+        generative_model: models.GenerativeModel object
+        inference_network: models.InferenceNetwork object
+        obs: tensor of shape [batch_size, num_data * num_dim]
+
+    Returns:
+        log_p: marginal likelihood tensor [batch_size]
+        log_p_true: marginal likelihood tensor [batch_size]
+        kl_qp: tensor [batch_size]
+        kl_pq: tensor [batch_size]
+        kl_qp_true: tensor [batch_size]
+        kl_pq_true: tensor [batch_size]
+    """
+    batch_size = obs.shape[0]
+    latent_dist = generative_model.get_latent_dist()
+    latent = latent_dist.enumerate()[:, None, :].repeat(1, batch_size, 1)
+
+    log_joint = generative_model.get_log_prob(latent, obs)
+    log_p = torch.logsumexp(log_joint, dim=0)
+    log_posterior = log_joint - log_p[None, :]
+
+    log_joint_true = true_generative_model.get_log_prob(latent, obs)
+    log_p_true = torch.logsumexp(log_joint_true, dim=0)
+    log_posterior_true = log_joint_true - log_p_true[None, :]
+
+    log_q = inference_network.get_log_prob(latent, obs)
+
+    kl_qp = torch.sum(torch.exp(log_q) * (log_q - log_posterior), dim=0)
+    kl_pq = torch.sum(torch.exp(log_posterior) * (log_posterior - log_q), dim=0)
+
+    kl_qp_true = torch.sum(torch.exp(log_q) * (log_q - log_posterior_true), dim=0)
+    kl_pq_true = torch.sum(torch.exp(log_posterior_true) * (log_posterior_true - log_q), dim=0)
+
+    return log_p, log_p_true, kl_qp, kl_pq, kl_qp_true, kl_pq_true
+
+
+def eval_gen_inf(true_generative_model, generative_model, inference_network, data_loader):
+    (log_p_total, log_p_true_total,
+     kl_qp_total, kl_pq_total, kl_qp_true_total, kl_pq_true_total) = 0, 0, 0, 0, 0, 0
     num_data = data_loader.dataset.shape[0]
     for obs in iter(data_loader):
-        log_p, kl = get_log_p_and_kl(
-            generative_model, guide, obs, num_particles)
+        log_p, log_p_true, kl_qp, kl_pq, kl_qp_true, kl_pq_true = get_log_p_and_kl_enumerate(
+            true_generative_model, generative_model, inference_network, obs)
         log_p_total += torch.sum(log_p).item() / num_data
-        kl_total += torch.sum(kl).item() / num_data
-    return log_p_total, kl_total
+        log_p_true_total += torch.sum(log_p_true).item() / num_data
+        kl_qp_total += torch.sum(kl_qp).item() / num_data
+        kl_pq_total += torch.sum(kl_pq).item() / num_data
+        kl_qp_true_total += torch.sum(kl_qp_true).item() / num_data
+        kl_pq_true_total += torch.sum(kl_pq_true).item() / num_data
+    return (log_p_total, log_p_true_total,
+            kl_qp_total, kl_pq_total, kl_qp_true_total, kl_pq_true_total)

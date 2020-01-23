@@ -62,13 +62,13 @@ def save_plot(filename, x, label):
     os.makedirs(Path(filename).parent, exist_ok=True)
     plt.clf()
     s = 3
-    plt.figure(figsize=(s*len(x), s))
+    plt.figure(figsize=(s * len(x), s))
     lim = x.abs().ceil().max()
 
     for i, (x_i, label_i) in enumerate(zip(x, label)):
-        plt.subplot(1, len(x), i+1)
+        plt.subplot(1, len(x), i + 1)
         x_i = x_i.reshape(-1, 2)
-        for j in range(label_i.max()+1):
+        for j in range(label_i.max() + 1):
             plt.scatter(x_i[label_i == j, 0], x_i[label_i == j, 1])
             plt.xlim([-lim, lim])
             plt.ylim([-lim, lim])
@@ -91,7 +91,8 @@ def init(num_data, num_dim, true_cluster_cov, device):
 
 def save_checkpoint(path, generative_model, inference_network, theta_losses,
                     phi_losses, cluster_cov_distances,
-                    test_log_ps, test_kls, train_log_ps, train_kls):
+                    test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
+                    train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true):
     torch.save({
         'generative_model_state_dict': generative_model.state_dict(),
         'inference_network_state_dict': inference_network.state_dict(),
@@ -101,9 +102,17 @@ def save_checkpoint(path, generative_model, inference_network, theta_losses,
         'num_dim': generative_model.num_dim,
         'cluster_cov_distances': cluster_cov_distances,
         'test_log_ps': test_log_ps,
-        'test_kls': test_kls,
+        'test_log_ps_true': test_log_ps_true,
+        'test_kl_qps': test_kl_qps,
+        'test_kl_pqs': test_kl_pqs,
+        'test_kl_qps_true': test_kl_qps_true,
+        'test_kl_pqs_true': test_kl_pqs_true,
         'train_log_ps': train_log_ps,
-        'train_kls': train_kls
+        'train_log_ps_true': train_log_ps_true,
+        'train_kl_qps': train_kl_qps,
+        'train_kl_pqs': train_kl_pqs,
+        'train_kl_qps_true': train_kl_qps_true,
+        'train_kl_pqs_true': train_kl_pqs_true,
     }, path)
     print_with_time('Saved checkpoint to {}'.format(path))
 
@@ -122,10 +131,21 @@ def load_checkpoint(path, device):
     theta_losses = checkpoint['theta_losses']
     phi_losses = checkpoint['phi_losses']
     cluster_cov_distances = checkpoint['cluster_cov_distances']
+
     test_log_ps = checkpoint['test_log_ps']
-    test_kls = checkpoint['test_kls']
+    test_log_ps_true = checkpoint['test_log_ps_true']
+    test_kl_qps = checkpoint['test_kl_qps']
+    test_kl_pqs = checkpoint['test_kl_pqs']
+    test_kl_qps_true = checkpoint['test_kl_qps_true']
+    test_kl_pqs_true = checkpoint['test_kl_pqs_true']
     train_log_ps = checkpoint['train_log_ps']
-    train_kls = checkpoint['train_kls']
+    train_log_ps_true = checkpoint['train_log_ps_true']
+    train_kl_qps = checkpoint['train_kl_qps']
+    train_kl_pqs = checkpoint['train_kl_pqs']
+    train_kl_qps_true = checkpoint['train_kl_qps_true']
+    train_kl_pqs_true = checkpoint['train_kl_pqs_true']
+
     return (generative_model, inference_network, theta_losses, phi_losses,
-            cluster_cov_distances, test_log_ps, test_kls, train_log_ps,
-            train_kls)
+            cluster_cov_distances, test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true,
+            test_kl_pqs_true, train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true,
+            train_kl_pqs_true)
