@@ -32,13 +32,13 @@ def run(args):
     # train
     if args.algorithm == 'mws':
         (theta_losses, phi_losses, cluster_cov_distances,
-         log_ps, kls) = train.train_mws(
+         test_log_ps, test_kls, train_log_ps, train_kls) = train.train_mws(
             generative_model, inference_network, data_loader,
             args.num_iterations, args.memory_size, true_cluster_cov,
             test_data_loader, args.test_num_particles)
     elif args.algorithm == 'rws':
         (theta_losses, phi_losses, cluster_cov_distances,
-         log_ps, kls) = train.train_rws(
+         test_log_ps, test_kls, train_log_ps, train_kls) = train.train_rws(
             generative_model, inference_network, data_loader,
             args.num_iterations, args.num_particles, true_cluster_cov,
             test_data_loader, args.test_num_particles)
@@ -48,7 +48,7 @@ def run(args):
         args.checkpoint_path_prefix, args.algorithm)
     util.save_checkpoint(checkpoint_path, generative_model, inference_network,
                          theta_losses, phi_losses, cluster_cov_distances,
-                         log_ps, kls)
+                         test_log_ps, test_kls, train_log_ps, train_kls)
 
 
 if __name__ == '__main__':

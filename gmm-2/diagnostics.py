@@ -9,12 +9,13 @@ def main(args):
     if not os.path.exists(args.diagnostics_dir):
         os.makedirs(args.diagnostics_dir)
 
-    fig, axs = plt.subplots(1, 5, figsize=(15, 3), dpi=100)
+    fig, axs = plt.subplots(1, 7, figsize=(7 * 3, 3), dpi=100)
     for algorithm in ['mws', 'rws']:
         checkpoint_path = '{}_{}.pt'.format(
             args.checkpoint_path_prefix, algorithm)
-        (_, _, theta_losses, phi_losses,
-         cluster_cov_distances, log_ps, kls) = util.load_checkpoint(
+        (_, _, theta_losses, phi_losses, cluster_cov_distances,
+         test_log_ps, test_kls, train_log_ps,
+         train_kls) = util.load_checkpoint(
             checkpoint_path, torch.device('cpu'))
 
         ax = axs[0]
@@ -36,16 +37,28 @@ def main(args):
         ax.set_xticks([0, len(cluster_cov_distances) - 1])
 
         ax = axs[3]
-        ax.plot(log_ps, label=algorithm)
+        ax.plot(test_log_ps, label=algorithm)
         ax.set_xlabel('iteration')
         ax.set_ylabel('test log p')
-        ax.set_xticks([0, len(log_ps) - 1])
+        ax.set_xticks([0, len(test_log_ps) - 1])
 
         ax = axs[4]
-        ax.plot(kls, label=algorithm)
+        ax.plot(test_kls, label=algorithm)
         ax.set_xlabel('iteration')
         ax.set_ylabel('test KL')
-        ax.set_xticks([0, len(kls) - 1])
+        ax.set_xticks([0, len(test_kls) - 1])
+
+        ax = axs[5]
+        ax.plot(train_log_ps, label=algorithm)
+        ax.set_xlabel('iteration')
+        ax.set_ylabel('train log p')
+        ax.set_xticks([0, len(train_log_ps) - 1])
+
+        ax = axs[6]
+        ax.plot(train_kls, label=algorithm)
+        ax.set_xlabel('iteration')
+        ax.set_ylabel('train KL')
+        ax.set_xticks([0, len(train_kls) - 1])
 
     axs[-1].legend()
     for ax in axs:
