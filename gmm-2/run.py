@@ -62,11 +62,11 @@ if __name__ == '__main__':
     parser.add_argument('--num-clusters', type=int, default=3, help=' ')
     parser.add_argument('--num-data', type=int, default=10, help=' ')
     parser.add_argument('--num-train', type=int, default=100, help=' ')
-    parser.add_argument('--num-iterations', type=int, default=10000, help=' ')
+    parser.add_argument('--num-iterations', type=int, default=20000, help=' ')
     parser.add_argument('--num-particles', type=int, default=10, help=' ')
     parser.add_argument('--memory-size', type=int, default=10, help=' ')
     parser.add_argument('--num-test', type=int, default=100, help=' ')
-    parser.add_argument('--test-num-particles', type=int, default=100,
+    parser.add_argument('--test-num-particles', type=int, default=5000,
                         help=' ')
     parser.add_argument('--checkpoint-path-prefix', default='checkpoint',
                         help=' ')
