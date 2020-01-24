@@ -201,8 +201,8 @@ def train_rws(generative_model, inference_network, data_loader,
         wake_phi_loss.backward()
         optimizer_phi.step()
 
-        theta_losses.append(wake_theta_loss)
-        phi_losses.append(wake_phi_loss)
+        theta_losses.append(wake_theta_loss.item())
+        phi_losses.append(wake_phi_loss.item())
         cluster_cov_distances.append(torch.norm(
             true_cluster_cov - generative_model.get_cluster_cov()
         ).item())
