@@ -6,7 +6,7 @@ import seaborn as sns
 import numpy as np
 
 
-def moving_average(x, width=10):
+def moving_average(x, width=100):
     return np.convolve(x, np.ones(width) / width, 'valid')
 
 
@@ -14,7 +14,7 @@ def main(args):
     if not os.path.exists(args.diagnostics_dir):
         os.makedirs(args.diagnostics_dir)
 
-    fig, axs = plt.subplots(1, 15, figsize=(15 * 3, 3), dpi=100)
+    fig, axss = plt.subplots(3, 5, figsize=(5 * 3, 3 * 3), dpi=100)
     for algorithm in ['mws', 'rws']:
         checkpoint_path = '{}_{}.pt'.format(
             args.checkpoint_path_prefix, algorithm)
@@ -24,99 +24,94 @@ def main(args):
          train_kl_pqs_true) = util.load_checkpoint(
             checkpoint_path, torch.device('cpu'))
 
-        ax = axs[0]
+        ax = axss[0, 0]
         ax.plot(moving_average(theta_losses), label=algorithm)
         ax.set_xlabel('iteration')
-        ax.set_ylabel('theta loss')
+        ax.set_ylabel('model loss')
         ax.set_xticks([0, len(theta_losses) - 1])
 
-        ax = axs[1]
+        ax = axss[0, 1]
         ax.plot(moving_average(phi_losses), label=algorithm)
         ax.set_xlabel('iteration')
-        ax.set_ylabel('phi loss')
+        ax.set_ylabel('inference loss')
         ax.set_xticks([0, len(phi_losses) - 1])
 
-        ax = axs[2]
+        ax = axss[0, 2]
         ax.plot(cluster_cov_distances, label=algorithm)
         ax.set_xlabel('iteration / 100')
         ax.set_ylabel('cluster cov distance')
         ax.set_xticks([0, len(cluster_cov_distances) - 1])
 
-        ax = axs[3]
-        ax.plot(test_log_ps, label=algorithm)
+        for ax in axss[0, 3:]:
+            ax.axis('off')
+
+        ax = axss[1, 0]
+        lines = ax.plot(test_log_ps, label=algorithm)
+        ax.plot(test_log_ps_true, color=lines[0].get_color())
         ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('test log p')
+        ax.set_ylabel('TEST\nlog p')
         ax.set_xticks([0, len(test_log_ps) - 1])
 
-        ax = axs[4]
-        ax.plot(test_log_ps_true, label=algorithm)
-        ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('test log p true')
-        ax.set_xticks([0, len(test_log_ps_true) - 1])
-
-        ax = axs[5]
+        ax = axss[1, 1]
         ax.plot(test_kl_qps, label=algorithm)
         ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('test kl(q, p)')
+        ax.set_ylabel('KL(q, p)')
         ax.set_xticks([0, len(test_kl_qps) - 1])
 
-        ax = axs[6]
+        ax = axss[1, 2]
         ax.plot(test_kl_pqs, label=algorithm)
         ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('test kl(p, q)')
+        ax.set_ylabel('KL(p, q)')
         ax.set_xticks([0, len(test_kl_pqs) - 1])
 
-        ax = axs[7]
+        ax = axss[1, 3]
         ax.plot(test_kl_qps_true, label=algorithm)
         ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('test kl(q, p true)')
+        ax.set_ylabel('KL(q, p true)')
         ax.set_xticks([0, len(test_kl_qps_true) - 1])
 
-        ax = axs[8]
+        ax = axss[1, 4]
         ax.plot(test_kl_pqs_true, label=algorithm)
         ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('test kl(p true, q)')
+        ax.set_ylabel('KL(p true, q)')
         ax.set_xticks([0, len(test_kl_pqs_true) - 1])
 
-        ax = axs[9]
-        ax.plot(train_log_ps, label=algorithm)
+        ax = axss[2, 0]
+        lines = ax.plot(train_log_ps, label=algorithm)
+        ax.plot(train_log_ps_true, color=lines[0].get_color())
         ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('train log p')
+        ax.set_ylabel('TRAIN\nlog p')
         ax.set_xticks([0, len(train_log_ps) - 1])
 
-        ax = axs[10]
-        ax.plot(train_log_ps_true, label=algorithm)
-        ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('train log p true')
-        ax.set_xticks([0, len(train_log_ps_true) - 1])
-
-        ax = axs[11]
+        ax = axss[2, 1]
         ax.plot(train_kl_qps, label=algorithm)
         ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('train kl(q, p)')
+        ax.set_ylabel('KL(q, p)')
         ax.set_xticks([0, len(train_kl_qps) - 1])
 
-        ax = axs[12]
+        ax = axss[2, 2]
         ax.plot(train_kl_pqs, label=algorithm)
         ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('train kl(p, q)')
+        ax.set_ylabel('KL(p, q)')
         ax.set_xticks([0, len(train_kl_pqs) - 1])
 
-        ax = axs[13]
+        ax = axss[2, 3]
         ax.plot(train_kl_qps_true, label=algorithm)
         ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('train kl(q, p true)')
+        ax.set_ylabel('KL(q, p true)')
         ax.set_xticks([0, len(train_kl_qps_true) - 1])
 
-        ax = axs[14]
+        ax = axss[2, 4]
         ax.plot(train_kl_pqs_true, label=algorithm)
         ax.set_xlabel('iteration / 100')
-        ax.set_ylabel('train kl(p true, q)')
+        ax.set_ylabel('KL(p true, q)')
         ax.set_xticks([0, len(train_kl_pqs_true) - 1])
 
-    axs[-1].legend()
-    for ax in axs:
-        sns.despine(ax=ax, trim=True)
+    axss[-1, -1].legend()
+    for axs in axss:
+        for ax in axs:
+            sns.despine(ax=ax, trim=True)
+            ax.xaxis.set_label_coords(0.5, -0.01)
 
     fig.tight_layout(pad=0)
     path = os.path.join(args.diagnostics_dir, 'losses.pdf')
