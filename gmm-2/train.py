@@ -13,8 +13,9 @@ def train_mws(generative_model, inference_network, data_loader,
         generative_model.parameters(), inference_network.parameters()))
     (theta_losses, phi_losses, cluster_cov_distances,
      test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
-     train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true) = \
-        [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
+     train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
+     train_kl_memory_ps, train_kl_memory_ps_true) = \
+        [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
 
     memory = {}
     data_loader_iter = iter(data_loader)
@@ -121,8 +122,9 @@ def train_mws(generative_model, inference_network, data_loader,
 
         if iteration % 100 == 0:  # test every 100 iterations
             (test_log_p, test_log_p_true,
-             test_kl_qp, test_kl_pq, test_kl_qp_true, test_kl_pq_true) = models.eval_gen_inf(
-                true_generative_model, generative_model, inference_network,
+             test_kl_qp, test_kl_pq, test_kl_qp_true, test_kl_pq_true,
+             _, _) = models.eval_gen_inf(
+                true_generative_model, generative_model, inference_network, None,
                 test_data_loader)
             test_log_ps.append(test_log_p)
             test_log_ps_true.append(test_log_p_true)
@@ -132,8 +134,9 @@ def train_mws(generative_model, inference_network, data_loader,
             test_kl_pqs_true.append(test_kl_pq_true)
 
             (train_log_p, train_log_p_true,
-             train_kl_qp, train_kl_pq, train_kl_qp_true, train_kl_pq_true) = models.eval_gen_inf(
-                true_generative_model, generative_model, inference_network,
+             train_kl_qp, train_kl_pq, train_kl_qp_true, train_kl_pq_true,
+             train_kl_memory_p, train_kl_memory_p_true) = models.eval_gen_inf(
+                true_generative_model, generative_model, inference_network, memory,
                 data_loader)
             train_log_ps.append(train_log_p)
             train_log_ps_true.append(train_log_p_true)
@@ -141,12 +144,15 @@ def train_mws(generative_model, inference_network, data_loader,
             train_kl_pqs.append(train_kl_pq)
             train_kl_qps_true.append(train_kl_qp_true)
             train_kl_pqs_true.append(train_kl_pq_true)
+            train_kl_memory_ps.append(train_kl_memory_p)
+            train_kl_memory_ps_true.append(train_kl_memory_p_true)
 
             util.save_checkpoint(
                 checkpoint_path, generative_model, inference_network,
                 theta_losses, phi_losses, cluster_cov_distances,
                 test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
-                train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true)
+                train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
+                train_kl_memory_ps, train_kl_memory_ps_true)
 
         util.print_with_time(
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
@@ -159,7 +165,8 @@ def train_mws(generative_model, inference_network, data_loader,
 
     return (theta_losses, phi_losses, cluster_cov_distances,
             test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
-            train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true)
+            train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
+            train_kl_memory_ps, train_kl_memory_ps_true)
 
 
 def train_rws(generative_model, inference_network, data_loader,
@@ -208,8 +215,9 @@ def train_rws(generative_model, inference_network, data_loader,
         ).item())
         if iteration % 100 == 0:  # test every 100 iterations
             (test_log_p, test_log_p_true,
-             test_kl_qp, test_kl_pq, test_kl_qp_true, test_kl_pq_true) = models.eval_gen_inf(
-                true_generative_model, generative_model, inference_network,
+             test_kl_qp, test_kl_pq, test_kl_qp_true, test_kl_pq_true,
+             _, _) = models.eval_gen_inf(
+                true_generative_model, generative_model, inference_network, None,
                 test_data_loader)
             test_log_ps.append(test_log_p)
             test_log_ps_true.append(test_log_p_true)
@@ -219,8 +227,9 @@ def train_rws(generative_model, inference_network, data_loader,
             test_kl_pqs_true.append(test_kl_pq_true)
 
             (train_log_p, train_log_p_true,
-             train_kl_qp, train_kl_pq, train_kl_qp_true, train_kl_pq_true) = models.eval_gen_inf(
-                true_generative_model, generative_model, inference_network,
+             train_kl_qp, train_kl_pq, train_kl_qp_true, train_kl_pq_true,
+             _, _) = models.eval_gen_inf(
+                true_generative_model, generative_model, inference_network, None,
                 data_loader)
             train_log_ps.append(train_log_p)
             train_log_ps_true.append(train_log_p_true)
@@ -233,7 +242,8 @@ def train_rws(generative_model, inference_network, data_loader,
                 checkpoint_path, generative_model, inference_network,
                 theta_losses, phi_losses, cluster_cov_distances,
                 test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
-                train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true)
+                train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
+                None, None)
 
         util.print_with_time(
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
@@ -246,4 +256,5 @@ def train_rws(generative_model, inference_network, data_loader,
 
     return (theta_losses, phi_losses, cluster_cov_distances,
             test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
-            train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true)
+            train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
+            None, None)

@@ -21,7 +21,7 @@ def main(args):
         (_, _, theta_losses, phi_losses, cluster_cov_distances,
          test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
          train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true,
-         train_kl_pqs_true) = util.load_checkpoint(
+         train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true) = util.load_checkpoint(
             checkpoint_path, torch.device('cpu'))
 
         ax = axss[0, 0]
@@ -84,7 +84,10 @@ def main(args):
         ax.set_xticks([0, len(train_log_ps) - 1])
 
         ax = axss[2, 1]
-        ax.plot(train_kl_qps, label=algorithm)
+        lines = ax.plot(train_kl_qps, label=algorithm)
+        if algorithm == 'mws':
+            ax.plot(train_kl_memory_ps, label=algorithm,
+                    color=lines[0].get_color(), linestyle='dashed')
         ax.set_xlabel('iteration / 100')
         ax.set_ylabel('KL(q, p)')
         ax.set_xticks([0, len(train_kl_qps) - 1])
@@ -96,7 +99,10 @@ def main(args):
         ax.set_xticks([0, len(train_kl_pqs) - 1])
 
         ax = axss[2, 3]
-        ax.plot(train_kl_qps_true, label=algorithm)
+        lines = ax.plot(train_kl_qps_true, label=algorithm)
+        if algorithm == 'mws':
+            ax.plot(train_kl_memory_ps_true, label=algorithm,
+                    color=lines[0].get_color(), linestyle='dashed')
         ax.set_xlabel('iteration / 100')
         ax.set_ylabel('KL(q, p true)')
         ax.set_xticks([0, len(train_kl_qps_true) - 1])

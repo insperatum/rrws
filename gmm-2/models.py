@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import losses
 import math
+import util
 
 from clusterdist import CRP, MaskedSoftmaxClustering
 
@@ -87,7 +88,7 @@ class GenerativeModel(nn.Module):
         num_particles, batch_size, _ = latent.shape
         latent_log_prob = self.get_latent_dist().log_prob(latent)
         obs_dist = self.get_obs_dist(
-            latent.view(num_particles * batch_size, -1))
+            latent.reshape(num_particles * batch_size, -1))
         obs_log_prob = obs_dist.log_prob(
             obs.repeat(num_particles, 1)
         ).reshape(num_particles, batch_size)
@@ -249,7 +250,52 @@ def get_log_p_and_kl_enumerate(true_generative_model, generative_model, inferenc
     return log_p, log_p_true, kl_qp, kl_pq, kl_qp_true, kl_pq_true
 
 
-def eval_gen_inf(true_generative_model, generative_model, inference_network, data_loader):
+def get_kl_memory(memory, generative_model, true_generative_model):
+    """
+    Args:
+        memory: dict
+        generative_model: models.GenerativeModel object
+        true_generative_model: models.GenerativeModel object
+
+
+    Returns:
+        kl_memory_p: float
+        kl_memory_p_true: float
+    """
+    obs = torch.tensor(list(memory.keys()))  # [batch_size, num_data * num_dim]
+    memory_latent = torch.tensor(list(memory.values()))  # [batch_size, memory_size, num_data]
+    memory_log_prob = util.lognormexp(
+        generative_model.get_log_prob(
+            memory_latent.permute(1, 0, 2),
+            obs).t(),  # [batch_size, memory_size]
+        dim=1)  # [batch_size, memory_size]
+
+    batch_size = obs.shape[0]
+    latent = generative_model.get_latent_dist().enumerate()
+    latent_expanded = latent[:, None, :].repeat(1, batch_size, 1)
+
+    memory_size = memory_latent.shape[1]
+    nonzero_memory_ids = torch.nonzero(torch.prod(
+        memory_latent[:, :, None, :] == latent[None, None, :, :],
+        dim=-1
+    ))[..., -1].reshape(batch_size, memory_size)
+
+    log_joint = generative_model.get_log_prob(latent_expanded, obs)  # [all_latents, batch_size]
+    log_p = torch.logsumexp(log_joint, dim=0)  # [batch_size]
+    log_posterior = (log_joint - log_p[None, :]).t()  # [batch_size, all_latents]
+    relevant_log_posterior = torch.gather(log_posterior, 1, nonzero_memory_ids)  # [batch_size, memory_size]
+    kl_memory_p = torch.sum(torch.exp(memory_log_prob) * (memory_log_prob - relevant_log_posterior), dim=1)
+
+    true_log_joint = true_generative_model.get_log_prob(latent_expanded, obs)  # [all_latents, batch_size]
+    true_log_p = torch.logsumexp(true_log_joint, dim=0)  # [batch_size]
+    true_log_posterior = (true_log_joint - true_log_p[None, :]).t()  # [batch_size, all_latents]
+    true_relevant_log_posterior = torch.gather(true_log_posterior, 1, nonzero_memory_ids)  # [batch_size, memory_size]
+    kl_memory_p_true = torch.sum(torch.exp(memory_log_prob) * (memory_log_prob - true_relevant_log_posterior), dim=1)
+
+    return torch.mean(kl_memory_p).item(), torch.mean(kl_memory_p_true).item()
+
+
+def eval_gen_inf(true_generative_model, generative_model, inference_network, memory, data_loader):
     (log_p_total, log_p_true_total,
      kl_qp_total, kl_pq_total, kl_qp_true_total, kl_pq_true_total) = 0, 0, 0, 0, 0, 0
     num_data = data_loader.dataset.shape[0]
@@ -262,5 +308,12 @@ def eval_gen_inf(true_generative_model, generative_model, inference_network, dat
         kl_pq_total += torch.sum(kl_pq).item() / num_data
         kl_qp_true_total += torch.sum(kl_qp_true).item() / num_data
         kl_pq_true_total += torch.sum(kl_pq_true).item() / num_data
+
+    if memory is None:
+        kl_memory_p, kl_memory_p_true = None, None
+    else:
+        kl_memory_p, kl_memory_p_true = get_kl_memory(memory, generative_model, true_generative_model)
+
     return (log_p_total, log_p_true_total,
-            kl_qp_total, kl_pq_total, kl_qp_true_total, kl_pq_true_total)
+            kl_qp_total, kl_pq_total, kl_qp_true_total, kl_pq_true_total,
+            kl_memory_p, kl_memory_p_true)
