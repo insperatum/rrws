@@ -258,3 +258,81 @@ def train_rws(generative_model, inference_network, data_loader,
             test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
             train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
             None, None)
+
+
+def train_vimco(generative_model, inference_network, data_loader,
+                num_iterations, num_particles, true_cluster_cov,
+                test_data_loader, test_num_particles, true_generative_model,
+                checkpoint_path):
+    optimizer = torch.optim.Adam(itertools.chain(
+        generative_model.parameters(), inference_network.parameters()))
+    (theta_losses, phi_losses, cluster_cov_distances,
+     test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
+     train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true) = \
+        [], [], [], [], [], [], [], [], [], [], [], [], [], [], []
+    data_loader_iter = iter(data_loader)
+
+    for iteration in range(num_iterations):
+        # get obs
+        try:
+            obs = next(data_loader_iter)
+        except StopIteration:
+            data_loader_iter = iter(data_loader)
+            obs = next(data_loader_iter)
+
+        # loss
+        optimizer.zero_grad()
+        loss, elbo = losses.get_vimco_loss(
+            generative_model, inference_network, obs, num_particles)
+        loss.backward(retain_graph=True)
+        optimizer.step()
+
+        theta_losses.append(loss.item())
+        phi_losses.append(loss.item())
+        cluster_cov_distances.append(torch.norm(
+            true_cluster_cov - generative_model.get_cluster_cov()
+        ).item())
+        if iteration % 100 == 0:  # test every 100 iterations
+            (test_log_p, test_log_p_true,
+             test_kl_qp, test_kl_pq, test_kl_qp_true, test_kl_pq_true,
+             _, _) = models.eval_gen_inf(
+                true_generative_model, generative_model, inference_network, None,
+                test_data_loader)
+            test_log_ps.append(test_log_p)
+            test_log_ps_true.append(test_log_p_true)
+            test_kl_qps.append(test_kl_qp)
+            test_kl_pqs.append(test_kl_pq)
+            test_kl_qps_true.append(test_kl_qp_true)
+            test_kl_pqs_true.append(test_kl_pq_true)
+
+            (train_log_p, train_log_p_true,
+             train_kl_qp, train_kl_pq, train_kl_qp_true, train_kl_pq_true,
+             _, _) = models.eval_gen_inf(
+                true_generative_model, generative_model, inference_network, None,
+                data_loader)
+            train_log_ps.append(train_log_p)
+            train_log_ps_true.append(train_log_p_true)
+            train_kl_qps.append(train_kl_qp)
+            train_kl_pqs.append(train_kl_pq)
+            train_kl_qps_true.append(train_kl_qp_true)
+            train_kl_pqs_true.append(train_kl_pq_true)
+
+            util.save_checkpoint(
+                checkpoint_path, generative_model, inference_network,
+                theta_losses, phi_losses, cluster_cov_distances,
+                test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
+                train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
+                None, None)
+
+        util.print_with_time(
+            'it. {} | theta loss = {:.2f}'.format(iteration, loss))
+
+        if iteration % 200 == 0:
+            z = inference_network.get_latent_dist(obs).sample()
+            util.save_plot("images/rws/iteration_{}.png".format(iteration),
+                           obs[:3], z[:3])
+
+    return (theta_losses, phi_losses, cluster_cov_distances,
+            test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
+            train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
+            None, None)
