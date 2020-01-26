@@ -53,6 +53,14 @@ def run(args):
             generative_model, inference_network, data_loader,
             args.num_iterations, args.num_particles, true_cluster_cov,
             test_data_loader, args.test_num_particles, true_generative_model, checkpoint_path)
+    elif args.algorithm == 'vimco':
+        (theta_losses, phi_losses, cluster_cov_distances,
+         test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
+         train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true,
+         train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true) = train.train_vimco(
+            generative_model, inference_network, data_loader,
+            args.num_iterations, args.num_particles, true_cluster_cov,
+            test_data_loader, args.test_num_particles, true_generative_model, checkpoint_path)
 
     # save model
     util.save_checkpoint(checkpoint_path, generative_model, inference_network,
@@ -66,7 +74,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-    parser.add_argument('--algorithm', default='mws', help='rws or mws')
+    parser.add_argument('--algorithm', default='mws', help='rws, mws or vimco')
     parser.add_argument('--cuda', action='store_true', help='use cuda')
     parser.add_argument('--batch-size', type=int, default=20, help=' ')
     parser.add_argument('--num-dim', type=int, default=2, help=' ')

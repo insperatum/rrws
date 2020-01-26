@@ -85,3 +85,46 @@ def get_wake_phi_loss(generative_model, inference_network, obs,
     log_weight, log_q = get_log_weight_and_log_q(
         generative_model, inference_network, obs, num_particles)
     return get_wake_phi_loss_from_log_weight_and_log_q(log_weight, log_q)
+
+
+def get_vimco_loss(generative_model, inference_network, obs, num_particles):
+    """Almost twice faster version of VIMCO loss (measured for batch_size = 24,
+        num_particles = 1000). Inspired by Adam Kosiorek's implementation.
+
+    Args:
+        generative_model: models.GenerativeModel object
+        inference_network: models.InferenceNetwork object
+        obs: tensor of shape [batch_size]
+        num_particles: int
+
+    Returns:
+
+        loss: scalar that we call .backward() on and step the optimizer.
+        elbo: average elbo over data
+    """
+    log_weight, log_q = get_log_weight_and_log_q(
+        generative_model, inference_network, obs, num_particles)
+
+    # shape [batch_size, num_particles]
+    # log_weight_[b, k] = 1 / (K - 1) \sum_{\ell \neq k} \log w_{b, \ell}
+    log_weight_ = (torch.sum(log_weight, dim=1, keepdim=True) - log_weight) \
+        / (num_particles - 1)
+
+    # shape [batch_size, num_particles, num_particles]
+    # temp[b, k, k_] =
+    #     log_weight_[b, k]     if k == k_
+    #     log_weight[b, k]      otherwise
+    temp = log_weight.unsqueeze(-1) + torch.diag_embed(
+        log_weight_ - log_weight)
+
+    # this is the \Upsilon_{-k} term below equation 3
+    # shape [batch_size, num_particles]
+    control_variate = torch.logsumexp(temp, dim=1) - math.log(num_particles)
+
+    log_evidence = torch.logsumexp(log_weight, dim=1) - math.log(num_particles)
+    elbo = torch.mean(log_evidence)
+    loss = -elbo - torch.mean(torch.sum(
+        (log_evidence.unsqueeze(-1) - control_variate).detach() * log_q, dim=1
+    ))
+
+    return loss, elbo
