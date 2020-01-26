@@ -25,17 +25,18 @@ def run(args):
 
     # data
     util.print_with_time('data')
+    train_data, test_data = util.load_data()
     data_loader = torch.utils.data.DataLoader(
-        true_generative_model.sample_obs(args.num_train),
+        train_data,
         batch_size=args.batch_size, shuffle=True)
     test_data_loader = torch.utils.data.DataLoader(
-        true_generative_model.sample_obs(args.num_test),
+        test_data,
         batch_size=args.batch_size, shuffle=True)
 
     # train
     util.print_with_time('train')
-    checkpoint_path = '{}_{}_{}.pt'.format(
-        args.checkpoint_path_prefix, args.algorithm, args.seed)
+    checkpoint_path = '{}_{}_{}_{}.pt'.format(
+        args.checkpoint_path_prefix, args.algorithm, args.seed, args.num_particles)
     if args.algorithm == 'mws':
         (theta_losses, phi_losses, cluster_cov_distances,
          test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
@@ -70,11 +71,11 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', type=int, default=20, help=' ')
     parser.add_argument('--num-dim', type=int, default=2, help=' ')
     parser.add_argument('--num-data', type=int, default=7, help=' ')
-    parser.add_argument('--num-train', type=int, default=100, help=' ')
+    # parser.add_argument('--num-train', type=int, default=100, help=' ')
     parser.add_argument('--num-iterations', type=int, default=10000, help=' ')
     parser.add_argument('--num-particles', type=int, default=5, help=' ')
     parser.add_argument('--memory-size', type=int, default=5, help=' ')
-    parser.add_argument('--num-test', type=int, default=100, help=' ')
+    # parser.add_argument('--num-test', type=int, default=100, help=' ')
     parser.add_argument('--test-num-particles', type=int, default=5000,
                         help=' ')
     parser.add_argument('--checkpoint-path-prefix', default='checkpoint',

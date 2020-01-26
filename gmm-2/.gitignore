@@ -2,3 +2,4 @@
 diagnostics/
 cp_from_om.sh
 images/
+!data.pt

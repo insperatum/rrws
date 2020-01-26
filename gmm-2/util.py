@@ -160,3 +160,29 @@ def load_checkpoint(path, device):
 def set_seed(seed):
     torch.manual_seed(seed)
     np.random.seed(seed)
+
+
+def generate_and_save_data():
+    num_dim = 2
+    device = torch.device('cpu')
+    num_data = 7
+    num_train = 100
+    num_test = 100
+
+    true_cluster_cov = torch.eye(num_dim, device=device) * 0.03
+    _, _, true_generative_model = init(
+        num_data, num_dim, true_cluster_cov,
+        device)
+    train_data = true_generative_model.sample_obs(num_train)
+    test_data = true_generative_model.sample_obs(num_test)
+    torch.save({
+        'train_data': train_data,
+        'test_data': test_data
+    }, 'data.pt')
+
+
+def load_data():
+    data = torch.load('data.pt')
+    train_data = data['train_data']
+    test_data = data['test_data']
+    return train_data, test_data
