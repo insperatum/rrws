@@ -21,6 +21,7 @@ def run(args):
     generative_model, inference_network, true_generative_model = util.init(
         args.num_data, args.num_dim, true_cluster_cov,
         device)
+    util.set_seed(args.seed)
 
     # data
     util.print_with_time('data')
@@ -33,8 +34,8 @@ def run(args):
 
     # train
     util.print_with_time('train')
-    checkpoint_path = '{}_{}.pt'.format(
-        args.checkpoint_path_prefix, args.algorithm)
+    checkpoint_path = '{}_{}_{}.pt'.format(
+        args.checkpoint_path_prefix, args.algorithm, args.seed)
     if args.algorithm == 'mws':
         (theta_losses, phi_losses, cluster_cov_distances,
          test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
@@ -78,5 +79,6 @@ if __name__ == '__main__':
                         help=' ')
     parser.add_argument('--checkpoint-path-prefix', default='checkpoint',
                         help=' ')
+    parser.add_argument('--seed', type=int, default=1, help=' ')
     args = parser.parse_args()
     run(args)

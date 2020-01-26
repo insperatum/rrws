@@ -2,6 +2,7 @@ import torch
 import datetime
 import models
 import os
+import numpy as np
 from pathlib import Path
 from matplotlib import pyplot as plt
 # hack for https://github.com/dmlc/xgboost/issues/1715
@@ -154,3 +155,8 @@ def load_checkpoint(path, device):
             cluster_cov_distances, test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true,
             test_kl_pqs_true, train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true,
             train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true)
+
+
+def set_seed(seed):
+    torch.manual_seed(seed)
+    np.random.seed(seed)
