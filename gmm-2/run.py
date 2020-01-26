@@ -35,7 +35,7 @@ def run(args):
 
     # train
     util.print_with_time('train')
-    checkpoint_path = '{}_{}_{}_{}.pt'.format(
+    checkpoint_path = 'checkpoints/{}_{}_{}_{}.pt'.format(
         args.checkpoint_path_prefix, args.algorithm, args.seed, args.num_particles)
     if args.algorithm == 'mws':
         (theta_losses, phi_losses, cluster_cov_distances,
