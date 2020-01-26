@@ -42,14 +42,20 @@ def train_mws(generative_model, inference_network, data_loader,
                 # batch shape [1] and event shape [num_data]
                 latent_dist = inference_network.get_latent_dist(
                     single_obs.unsqueeze(0))
-                # [memory_size, num_data]
-                latent = inference_network.sample_from_latent_dist(
-                    latent_dist, memory_size).squeeze(1)
-                # list of M \in {1, ..., memory_size} elements
-                # could be less than memory_size because
-                # sampled elements can be duplicate
-                memory[single_obs_key] = list(set(
-                    [tuple(x.tolist()) for x in latent]))
+
+                # HACK
+                while True:
+                    # [memory_size, num_data]
+                    latent = inference_network.sample_from_latent_dist(
+                        latent_dist, memory_size).squeeze(1)
+                    # list of M \in {1, ..., memory_size} elements
+                    # could be less than memory_size because
+                    # sampled elements can be duplicate
+                    memory[single_obs_key] = list(set(
+                        [tuple(x.tolist()) for x in latent]))
+
+                    if len(memory[single_obs_key]) == memory_size:
+                        break
 
             # WAKE
             # batch shape [1] and event shape [num_data]
