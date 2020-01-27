@@ -164,10 +164,10 @@ def train_mws(generative_model, inference_network, data_loader,
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
                 iteration, theta_loss, phi_loss))
 
-        if iteration % 200 == 0:
-            z = inference_network.get_latent_dist(obs).sample()
-            util.save_plot("images/mws/iteration_{}.png".format(iteration),
-                           obs[:3], z[:3])
+        # if iteration % 200 == 0:
+        #     z = inference_network.get_latent_dist(obs).sample()
+        #     util.save_plot("images/mws/iteration_{}.png".format(iteration),
+        #                    obs[:3], z[:3])
 
     return (theta_losses, phi_losses, cluster_cov_distances,
             test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
@@ -255,10 +255,10 @@ def train_rws(generative_model, inference_network, data_loader,
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
                 iteration, wake_theta_loss, wake_phi_loss))
 
-        if iteration % 200 == 0:
-            z = inference_network.get_latent_dist(obs).sample()
-            util.save_plot("images/rws/iteration_{}.png".format(iteration),
-                           obs[:3], z[:3])
+        # if iteration % 200 == 0:
+        #     z = inference_network.get_latent_dist(obs).sample()
+        #     util.save_plot("images/rws/iteration_{}.png".format(iteration),
+        #                    obs[:3], z[:3])
 
     return (theta_losses, phi_losses, cluster_cov_distances,
             test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
@@ -333,10 +333,10 @@ def train_vimco(generative_model, inference_network, data_loader,
         util.print_with_time(
             'it. {} | theta loss = {:.2f}'.format(iteration, loss))
 
-        if iteration % 200 == 0:
-            z = inference_network.get_latent_dist(obs).sample()
-            util.save_plot("images/rws/iteration_{}.png".format(iteration),
-                           obs[:3], z[:3])
+        # if iteration % 200 == 0:
+        #     z = inference_network.get_latent_dist(obs).sample()
+        #     util.save_plot("images/rws/iteration_{}.png".format(iteration),
+        #                    obs[:3], z[:3])
 
     return (theta_losses, phi_losses, cluster_cov_distances,
             test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
