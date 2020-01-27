@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 import numpy as np
 import os
+import scipy
 
 
 train_data, test_data = util.load_data()
@@ -130,6 +131,22 @@ def load(algorithm, seed, num_particles):
     return generative_model, inference_network, memory
 
 
+def plot_normal2d(ax, mean, cov, num_points=100, confidence=0.95, **kwargs):
+    # https://stats.stackexchange.com/questions/64680/how-to-determine-quantiles-isolines-of-a-multivariate-normal-distribution
+    # plots a `confidence' probability ellipse
+    const = -2 * np.log(1 - confidence)
+    eigvals, eigvecs = scipy.linalg.eig(np.linalg.inv(cov))
+    eigvals = np.real(eigvals)
+    a = np.sqrt(const / eigvals[0])
+    b = np.sqrt(const / eigvals[1])
+    theta = np.linspace(-np.pi, np.pi, num=num_points)
+    xy = eigvecs @ np.array([np.cos(theta) * a, 
+                             np.sin(theta) * b]) + \
+         np.expand_dims(mean, -1)
+    ax.plot(xy[0, :], xy[1, :], **kwargs)
+    return ax
+
+
 if __name__ == '__main__':
     train_data, test_data = util.load_data()
     num_samples_per_something = 100
@@ -179,3 +196,36 @@ if __name__ == '__main__':
         fig.savefig(path, bbox_inches='tight')
         print('Saved to {}'.format(path))
         plt.close(fig)
+
+
+
+
+
+
+
+
+
+
+    seed = 1
+    fig, axs = plt.subplots(1, len(num_particless),
+                            sharex=True, sharey=True,
+                            figsize=(3 * len(num_particless), 3))
+
+    for num_particles, ax in zip(num_particless, axs):
+        ax.set_title('K = {}'.format(num_particles))
+        plot_normal2d(ax, [0, 0], np.eye(2) * 0.03, color='black', label='True')
+        for algorithm, color in zip(algorithms, colors):
+            cluster_cov = load(algorithm, seed, num_particles)[0].get_cluster_cov().detach().numpy()
+            plot_normal2d(ax, [0, 0], cluster_cov, color=color, label=algorithm.upper())
+
+    axs[-1].legend(ncol=2)
+
+    for ax in axs:
+        ax.set_xticks([])
+        ax.set_yticks([])
+
+    fig.tight_layout(pad=0)
+    path = os.path.join('diagnostics/cluster_cov.png')
+    fig.savefig(path, bbox_inches='tight')
+    print('Saved to {}'.format(path))
+    plt.close(fig)
