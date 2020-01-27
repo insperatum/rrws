@@ -181,8 +181,19 @@ def main(args):
             ax.set_ylabel('KL(p true, q)')
             ax.set_xticks([0, len(train_kl_pqs_true[0]) - 1])
 
-        lines = [Line2D([0], [0], color=color) for color in colors]
-        axss[-1, -1].legend(lines, [algorithm.upper() for algorithm in algorithms])
+        lines = [
+            Line2D([0], [0], color=colors[0]),
+            Line2D([0], [0], color=colors[0], linestyle='dashed'),
+            Line2D([0], [0], color=colors[1]),
+            Line2D([0], [0], color=colors[2]),
+        ]
+        labels = [
+            'MWS',
+            'MWS memory',
+            'RWS',
+            'VIMCO'
+        ]
+        axss[0, 0].legend(lines, labels)
 
         for axs in axss:
             for ax in axs:
@@ -322,8 +333,19 @@ def main(args):
             ax.set_ylabel('KL(p true, q)')
             ax.set_xticks(num_particless)
 
-    lines = [Line2D([0], [0], color=color, marker='o', linestyle='') for color in colors]
-    axss[-1, -1].legend(lines, [algorithm.upper() for algorithm in algorithms])
+    lines = [
+        Line2D([0], [0], color=colors[0], marker='o', linestyle=''),
+        Line2D([0], [0], color=colors[0], marker='o', linestyle='', fillstyle='none', markerfacecolor='white'),
+        Line2D([0], [0], color=colors[1], marker='o', linestyle=''),
+        Line2D([0], [0], color=colors[2], marker='o', linestyle=''),
+    ]
+    labels = [
+        'MWS',
+        'MWS memory',
+        'RWS',
+        'VIMCO'
+    ]
+    axss[0, 0].legend(lines, labels)
 
     for ax in axss[-1]:
         ax.set_xlabel('num particles')
