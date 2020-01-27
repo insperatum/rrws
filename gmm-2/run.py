@@ -44,7 +44,8 @@ def run(args):
         (theta_losses, phi_losses, cluster_cov_distances,
          test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
          train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true,
-         train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true, memory) = train.train_mws(
+         train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true, memory,
+         reweighted_train_kl_qps, reweighted_train_kl_qps_true) = train.train_mws(
             generative_model, inference_network, data_loader,
             args.num_iterations, args.memory_size, true_cluster_cov,
             test_data_loader, args.test_num_particles, true_generative_model, checkpoint_path)
@@ -52,7 +53,8 @@ def run(args):
         (theta_losses, phi_losses, cluster_cov_distances,
          test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
          train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true,
-         train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true, memory) = train.train_mws(
+         train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true, memory,
+         reweighted_train_kl_qps, reweighted_train_kl_qps_true) = train.train_mws(
             generative_model, inference_network, data_loader,
             args.num_iterations, args.memory_size, true_cluster_cov,
             test_data_loader, args.test_num_particles, true_generative_model, checkpoint_path,
@@ -61,7 +63,8 @@ def run(args):
         (theta_losses, phi_losses, cluster_cov_distances,
          test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
          train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true,
-         train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true, memory) = train.train_rws(
+         train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true, memory,
+         reweighted_train_kl_qps, reweighted_train_kl_qps_true) = train.train_rws(
             generative_model, inference_network, data_loader,
             args.num_iterations, args.num_particles, true_cluster_cov,
             test_data_loader, args.test_num_particles, true_generative_model, checkpoint_path)
@@ -69,7 +72,8 @@ def run(args):
         (theta_losses, phi_losses, cluster_cov_distances,
          test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
          train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true,
-         train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true, memory) = train.train_vimco(
+         train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true, memory,
+         reweighted_train_kl_qps, reweighted_train_kl_qps_true) = train.train_vimco(
             generative_model, inference_network, data_loader,
             args.num_iterations, args.num_particles, true_cluster_cov,
             test_data_loader, args.test_num_particles, true_generative_model, checkpoint_path)
@@ -79,7 +83,8 @@ def run(args):
                          theta_losses, phi_losses, cluster_cov_distances,
                          test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
                          train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true,
-                         train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true, memory)
+                         train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true, memory,
+                         reweighted_train_kl_qps, reweighted_train_kl_qps_true)
 
 
 if __name__ == '__main__':

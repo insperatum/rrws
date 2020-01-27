@@ -31,7 +31,7 @@ def load(algorithm, num_particles):
             algorithm, seed, num_particles)
         checkpoint = util.load_checkpoint(
             checkpoint_path, torch.device('cpu'))
-        for i, x in enumerate(checkpoint[2:]):
+        for i, x in enumerate(checkpoint[2:-3]):
             things[i].append(x)
 
     # cut to min length
@@ -64,6 +64,8 @@ def main(args):
         os.makedirs(args.diagnostics_dir)
 
     num_particless = [2, 5, 10, 20, 50]
+    # colors = ['C0', 'C1', 'C2', 'C5']
+    # algorithms = ['mws', 'rws', 'vimco', 'rmws']
     colors = ['C0', 'C1', 'C2']
     algorithms = ['mws', 'rws', 'vimco']
     for num_particles in num_particless:
@@ -148,8 +150,8 @@ def main(args):
             ax = axss[2, 1]
             plot_errors(ax, *train_kl_qps, color=color)
             # lines = ax.plot(train_kl_qps, label=algorithm)
-            if algorithm == 'mws':
-                plot_errors(ax, *train_kl_memory_ps, linestyle='dashed')
+            if algorithm == 'mws' or algorithm == 'rmws':
+                plot_errors(ax, *train_kl_memory_ps, linestyle='dashed', color=color)
                 # ax.plot(train_kl_memory_ps, label=algorithm,
                         # color=lines[0].get_color(), linestyle='dashed')
             ax.set_xlabel('iteration / 100')
@@ -166,8 +168,8 @@ def main(args):
             ax = axss[2, 3]
             plot_errors(ax, *train_kl_qps_true, color=color)
             # lines = ax.plot(train_kl_qps_true, label=algorithm)
-            if algorithm == 'mws':
-                plot_errors(ax, *train_kl_memory_ps_true, linestyle='dashed')
+            if algorithm == 'mws' or algorithm == 'rmws':
+                plot_errors(ax, *train_kl_memory_ps_true, linestyle='dashed', color=color)
                 # ax.plot(train_kl_memory_ps_true, label=algorithm,
                         # color=lines[0].get_color(), linestyle='dashed')
             ax.set_xlabel('iteration / 100')
@@ -186,12 +188,16 @@ def main(args):
             Line2D([0], [0], color=colors[0], linestyle='dashed'),
             Line2D([0], [0], color=colors[1]),
             Line2D([0], [0], color=colors[2]),
+            # Line2D([0], [0], color=colors[3]),
+            # Line2D([0], [0], color=colors[3], linestyle='dashed'),
         ]
         labels = [
             'MWS',
             'MWS memory',
             'RWS',
-            'VIMCO'
+            'VIMCO',
+            # 'R-MWS',
+            # 'R-MWS memory',
         ]
         axss[0, 0].legend(lines, labels)
 
@@ -304,7 +310,7 @@ def main(args):
             ax = axss[2, 1]
             plot_errors_end(ax, num_particles, *train_kl_qps, color=color)
             # lines = ax.plot(train_kl_qps, label=algorithm)
-            if algorithm == 'mws':
+            if algorithm == 'mws' or algorithm == 'rmws':
                 plot_errors_end(ax, num_particles, *train_kl_memory_ps, fillstyle='none', markerfacecolor='white', color=color)
                 # ax.plot(train_kl_memory_ps, label=algorithm,
                         # color=lines[0].get_color(), linestyle='dashed')
@@ -320,7 +326,7 @@ def main(args):
             ax = axss[2, 3]
             plot_errors_end(ax, num_particles, *train_kl_qps_true, color=color)
             # lines = ax.plot(train_kl_qps_true, label=algorithm)
-            if algorithm == 'mws':
+            if algorithm == 'mws' or algorithm == 'rmws':
                 plot_errors_end(ax, num_particles, *train_kl_memory_ps_true, fillstyle='none', markerfacecolor='white', color=color)
                 # ax.plot(train_kl_memory_ps_true, label=algorithm,
                         # color=lines[0].get_color(), linestyle='dashed')
@@ -338,12 +344,16 @@ def main(args):
         Line2D([0], [0], color=colors[0], marker='o', linestyle='', fillstyle='none', markerfacecolor='white'),
         Line2D([0], [0], color=colors[1], marker='o', linestyle=''),
         Line2D([0], [0], color=colors[2], marker='o', linestyle=''),
+        # Line2D([0], [0], color=colors[3], marker='o', linestyle=''),
+        # Line2D([0], [0], color=colors[3], marker='o', linestyle='', fillstyle='none', markerfacecolor='white'),
     ]
     labels = [
         'MWS',
         'MWS memory',
         'RWS',
-        'VIMCO'
+        'VIMCO',
+        # 'R-MWS',
+        # 'R-MWS memory',
     ]
     axss[0, 0].legend(lines, labels)
 

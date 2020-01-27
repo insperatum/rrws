@@ -94,7 +94,8 @@ def save_checkpoint(path, generative_model, inference_network, theta_losses,
                     phi_losses, cluster_cov_distances,
                     test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
                     train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
-                    train_kl_memory_ps, train_kl_memory_ps_true, memory):
+                    train_kl_memory_ps, train_kl_memory_ps_true, memory,
+                    reweighted_train_kl_qps, reweighted_train_kl_qps_true):
     torch.save({
         'generative_model_state_dict': generative_model.state_dict(),
         'inference_network_state_dict': inference_network.state_dict(),
@@ -117,7 +118,9 @@ def save_checkpoint(path, generative_model, inference_network, theta_losses,
         'train_kl_pqs_true': train_kl_pqs_true,
         'train_kl_memory_ps': train_kl_memory_ps,
         'train_kl_memory_ps_true': train_kl_memory_ps_true,
-        'memory': memory
+        'memory': memory,
+        'reweighted_train_kl_qps': reweighted_train_kl_qps,
+        'reweighted_train_kl_qps_true': reweighted_train_kl_qps_true
     }, path)
     print_with_time('Saved checkpoint to {}'.format(path))
 
@@ -151,15 +154,15 @@ def load_checkpoint(path, device):
     train_kl_pqs_true = checkpoint['train_kl_pqs_true']
     train_kl_memory_ps = checkpoint['train_kl_memory_ps']
     train_kl_memory_ps_true = checkpoint['train_kl_memory_ps_true']
-    if 'memory' in checkpoint:
-        memory = checkpoint['memory']
-    else:
-        memory = None
+    memory = checkpoint.get('memory', None)
+    reweighted_train_kl_qps = checkpoint.get('reweighted_train_kl_qps', None)
+    reweighted_train_kl_qps_true = checkpoint.get('reweighted_train_kl_qps_true', None)
 
     return (generative_model, inference_network, theta_losses, phi_losses,
             cluster_cov_distances, test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true,
             test_kl_pqs_true, train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true,
-            train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true, memory)
+            train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true, memory, reweighted_train_kl_qps,
+            reweighted_train_kl_qps_true)
 
 
 def set_seed(seed):

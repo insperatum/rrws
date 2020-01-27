@@ -3,6 +3,32 @@ import math
 import util
 
 
+def get_latent_and_log_weight_and_log_q(generative_model, inference_network, obs,
+                                        num_particles=1):
+    """Samples latent and computes log weight and log prob of inference network.
+
+    Args:
+        generative_model: models.GenerativeModel object
+        inference_network: models.InferenceNetwork object
+        obs: tensor of shape [batch_size, num_data * num_dim]
+        num_particles: int
+
+    Returns:
+        latent: tensor of shape [num_particles, batch_size, num_data]
+        log_weight: tensor of shape [batch_size, num_particles]
+        log_q: tensor of shape [batch_size, num_particles]
+    """
+
+    latent_dist = inference_network.get_latent_dist(obs)
+    latent = inference_network.sample_from_latent_dist(
+        latent_dist, num_particles)
+    log_p = generative_model.get_log_prob(latent, obs).transpose(0, 1)
+    log_q = inference_network.get_log_prob_from_latent_dist(
+        latent_dist, latent).transpose(0, 1)
+    log_weight = log_p - log_q
+    return latent, log_weight, log_q
+
+
 def get_log_weight_and_log_q(generative_model, inference_network, obs,
                              num_particles=1):
     """Compute log weight and log prob of inference network.
@@ -18,13 +44,8 @@ def get_log_weight_and_log_q(generative_model, inference_network, obs,
         log_q: tensor of shape [batch_size, num_particles]
     """
 
-    latent_dist = inference_network.get_latent_dist(obs)
-    latent = inference_network.sample_from_latent_dist(
-        latent_dist, num_particles)
-    log_p = generative_model.get_log_prob(latent, obs).transpose(0, 1)
-    log_q = inference_network.get_log_prob_from_latent_dist(
-        latent_dist, latent).transpose(0, 1)
-    log_weight = log_p - log_q
+    latent, log_weight, log_q = get_latent_and_log_weight_and_log_q(
+        generative_model, inference_network, obs, num_particles)
     return log_weight, log_q
 
 
