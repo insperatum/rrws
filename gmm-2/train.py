@@ -158,7 +158,7 @@ def train_mws(generative_model, inference_network, data_loader,
                 theta_losses, phi_losses, cluster_cov_distances,
                 test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
                 train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
-                train_kl_memory_ps, train_kl_memory_ps_true)
+                train_kl_memory_ps, train_kl_memory_ps_true, memory)
 
         util.print_with_time(
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
@@ -172,7 +172,7 @@ def train_mws(generative_model, inference_network, data_loader,
     return (theta_losses, phi_losses, cluster_cov_distances,
             test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
             train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
-            train_kl_memory_ps, train_kl_memory_ps_true)
+            train_kl_memory_ps, train_kl_memory_ps_true, memory)
 
 
 def train_rws(generative_model, inference_network, data_loader,
@@ -249,7 +249,7 @@ def train_rws(generative_model, inference_network, data_loader,
                 theta_losses, phi_losses, cluster_cov_distances,
                 test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
                 train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
-                None, None)
+                None, None, None)
 
         util.print_with_time(
             'it. {} | theta loss = {:.2f} | phi loss = {:.2f}'.format(
@@ -263,7 +263,7 @@ def train_rws(generative_model, inference_network, data_loader,
     return (theta_losses, phi_losses, cluster_cov_distances,
             test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
             train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
-            None, None)
+            None, None, None)
 
 
 def train_vimco(generative_model, inference_network, data_loader,
@@ -328,7 +328,7 @@ def train_vimco(generative_model, inference_network, data_loader,
                 theta_losses, phi_losses, cluster_cov_distances,
                 test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
                 train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
-                None, None)
+                None, None, None)
 
         util.print_with_time(
             'it. {} | theta loss = {:.2f}'.format(iteration, loss))
@@ -341,4 +341,4 @@ def train_vimco(generative_model, inference_network, data_loader,
     return (theta_losses, phi_losses, cluster_cov_distances,
             test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
             train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true, train_kl_pqs_true,
-            None, None)
+            None, None, None)
