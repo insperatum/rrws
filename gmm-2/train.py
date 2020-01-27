@@ -8,7 +8,7 @@ import models
 def train_mws(generative_model, inference_network, data_loader,
               num_iterations, memory_size, true_cluster_cov,
               test_data_loader, test_num_particles, true_generative_model,
-              checkpoint_path):
+              checkpoint_path, reweighted=False):
     optimizer = torch.optim.Adam(itertools.chain(
         generative_model.parameters(), inference_network.parameters()))
     (theta_losses, phi_losses, cluster_cov_distances,
@@ -94,23 +94,34 @@ def train_mws(generative_model, inference_network, data_loader,
 
             # REMEMBER
             # []
-            remembered_latent_id_dist = torch.distributions.Categorical(
-                logits=torch.tensor(
-                    list(map(log_p.get, memory[single_obs_key])))
-            )
-            remembered_latent_id = remembered_latent_id_dist.sample()
-            remembered_latent_id_log_prob = remembered_latent_id_dist.log_prob(
-                remembered_latent_id)
-            remembered_latent = memory[single_obs_key][remembered_latent_id]
-            remembered_latent_tensor = torch.tensor(
-                [remembered_latent],
-                device=single_obs.device)
-            # []
-            theta_loss += -(log_p.get(remembered_latent) -
-                            remembered_latent_id_log_prob.detach()) / len(obs)
-            # []
-            phi_loss += -inference_network.get_log_prob_from_latent_dist(
-                latent_dist, remembered_latent_tensor).view(()) / len(obs)
+            if reweighted:
+                memory_log_weight = torch.stack(
+                    list(map(log_p.get, memory[single_obs_key])))  # [memory_size]
+                memory_weight_normalized = util.exponentiate_and_normalize(memory_log_weight, dim=0)  # [memory_size]
+                memory_latent = torch.tensor(memory[single_obs_key])  # [memory_size, num_data]
+                inference_network_log_prob = inference_network.get_log_prob_from_latent_dist(
+                    latent_dist, memory_latent[:, None, :]).squeeze(-1)  # [memory_size]
+
+                theta_loss += -torch.sum(memory_log_weight * memory_weight_normalized.detach()) / len(obs)
+                phi_loss += -torch.sum(inference_network_log_prob * memory_weight_normalized.detach()) / len(obs)
+            else:
+                remembered_latent_id_dist = torch.distributions.Categorical(
+                    logits=torch.tensor(
+                        list(map(log_p.get, memory[single_obs_key])))
+                )
+                remembered_latent_id = remembered_latent_id_dist.sample()
+                remembered_latent_id_log_prob = remembered_latent_id_dist.log_prob(
+                    remembered_latent_id)
+                remembered_latent = memory[single_obs_key][remembered_latent_id]
+                remembered_latent_tensor = torch.tensor(
+                    [remembered_latent],
+                    device=single_obs.device)
+                # []
+                theta_loss += -(log_p.get(remembered_latent) -
+                                remembered_latent_id_log_prob.detach()) / len(obs)
+                # []
+                phi_loss += -inference_network.get_log_prob_from_latent_dist(
+                    latent_dist, remembered_latent_tensor).view(()) / len(obs)
 
             # SLEEP
             # TODO
