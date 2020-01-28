@@ -254,20 +254,24 @@ def get_log_p_and_kl_enumerate(true_generative_model, generative_model, inferenc
             generative_model, inference_network, obs, num_particles)
 
         q_log_prob = util.lognormexp(q_log_weight, dim=1)  # [batch_size, num_particles]
-
         q_latent_transposed = q_latent.transpose(0, 1)  # [batch_size, num_particles, num_data]
+        # [batch_size, num_particles, num_particles]
+        ids = (torch.prod(q_latent_transposed[:, :, None, :] == q_latent_transposed[:, None, :, :], dim=-1) != 0)
+        q_log_prob_unique = torch.logsumexp(q_log_prob[:, :, None].repeat(
+            1, 1, num_particles) * ids, -1)  # [batch_size, num_particles]
+
         relevant_ids = torch.nonzero(torch.prod(
             q_latent_transposed[:, :, None, :] == latent[None, None, :, :],
             dim=-1
         ))[..., -1].reshape(batch_size, num_particles)  # [batch_size, num_particles]
 
         relevant_log_posterior = torch.gather(log_posterior.t(), 1, relevant_ids)  # [batch_size, num_particles]
-        reweighted_kl_qp = torch.sum(torch.exp(q_log_prob) * (q_log_prob -
+        reweighted_kl_qp = torch.sum(torch.exp(q_log_prob) * (q_log_prob_unique -
                                                               relevant_log_posterior), dim=1)  # [batch_size]
 
         relevant_log_posterior_true = torch.gather(
             log_posterior_true.t(), 1, relevant_ids)  # [batch_size, num_particles]
-        reweighted_kl_qp_true = torch.sum(torch.exp(q_log_prob) * (q_log_prob -
+        reweighted_kl_qp_true = torch.sum(torch.exp(q_log_prob) * (q_log_prob_unique -
                                                                    relevant_log_posterior_true), dim=1)  # [batch_size]
     else:
         reweighted_kl_qp = None
