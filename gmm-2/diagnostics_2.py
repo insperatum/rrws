@@ -10,7 +10,9 @@ import util
 
 
 def moving_average(x, width=100):
-    return np.convolve(x, np.ones(width) / width, 'valid')
+    return np.concatenate([
+        np.full(width - 1, np.nan),
+        np.convolve(x, np.ones(width) / width, 'valid')])
 
 
 def plot_errors(ax, mid, lower, upper, **plot_kwargs):
@@ -25,14 +27,17 @@ def plot_errors_end(ax, num_particles, mid, lower, upper, **plot_kwargs):
 
 
 def load(algorithm, num_particles):
-    things = [[] for _ in range(17)]
+    things = [[] for _ in range(19)]
     for seed in range(1, 11):
         checkpoint_path = 'checkpoints/checkpoint_{}_{}_{}.pt'.format(
             algorithm, seed, num_particles)
         checkpoint = util.load_checkpoint(
             checkpoint_path, torch.device('cpu'))
-        for i, x in enumerate(checkpoint[2:-3]):
-            things[i].append(x)
+        for i, x in enumerate(checkpoint[2:-3] + checkpoint[-2:]):
+            if i >= 17 and (algorithm == 'rws' or algorithm == 'vimco'):
+                things[i].append(moving_average(x, 10))
+            else:
+                things[i].append(x)
 
     # cut to min length
     for i in range(len(things)):
@@ -76,7 +81,8 @@ def main(args):
             (theta_losses, phi_losses, cluster_cov_distances,
              test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
              train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true,
-             train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true) = zip(mid, lower, upper)
+             train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true,
+             reweighted_train_kl_qps, reweighted_train_kl_qps_true) = zip(mid, lower, upper)
 
             # import pdb; pdb.set_trace()
             ax = axss[0, 0]
@@ -154,6 +160,8 @@ def main(args):
                 plot_errors(ax, *train_kl_memory_ps, linestyle='dashed', color=color)
                 # ax.plot(train_kl_memory_ps, label=algorithm,
                         # color=lines[0].get_color(), linestyle='dashed')
+            else:
+                plot_errors(ax, *reweighted_train_kl_qps, linestyle='dashed', color=color)
             ax.set_xlabel('iteration / 100')
             ax.set_ylabel('KL(q, p)')
             ax.set_xticks([0, len(train_kl_qps[0]) - 1])
@@ -172,6 +180,8 @@ def main(args):
                 plot_errors(ax, *train_kl_memory_ps_true, linestyle='dashed', color=color)
                 # ax.plot(train_kl_memory_ps_true, label=algorithm,
                         # color=lines[0].get_color(), linestyle='dashed')
+            else:
+                plot_errors(ax, *reweighted_train_kl_qps_true, linestyle='dashed', color=color)
             ax.set_xlabel('iteration / 100')
             ax.set_ylabel('KL(q, p true)')
             ax.set_xticks([0, len(train_kl_qps_true[0]) - 1])
@@ -245,7 +255,8 @@ def main(args):
             (theta_losses, phi_losses, cluster_cov_distances,
              test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,
              train_log_ps, train_log_ps_true, train_kl_qps, train_kl_pqs, train_kl_qps_true,
-             train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true) = zip(mid, lower, upper)
+             train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true,
+             reweighted_train_kl_qps, reweighted_train_kl_qps_true) = zip(mid, lower, upper)
 
             # import pdb; pdb.set_trace()
             ax = axss[0, 0]
@@ -314,6 +325,9 @@ def main(args):
                 plot_errors_end(ax, num_particles, *train_kl_memory_ps, fillstyle='none', markerfacecolor='white', color=color)
                 # ax.plot(train_kl_memory_ps, label=algorithm,
                         # color=lines[0].get_color(), linestyle='dashed')
+            else:
+                plot_errors_end(ax, num_particles, *reweighted_train_kl_qps, fillstyle='none', markerfacecolor='white', color=color)
+
             ax.set_ylabel('KL(q, p)')
             ax.set_xticks(num_particless)
 
@@ -330,6 +344,8 @@ def main(args):
                 plot_errors_end(ax, num_particles, *train_kl_memory_ps_true, fillstyle='none', markerfacecolor='white', color=color)
                 # ax.plot(train_kl_memory_ps_true, label=algorithm,
                         # color=lines[0].get_color(), linestyle='dashed')
+            else:
+                plot_errors_end(ax, num_particles, *reweighted_train_kl_qps_true, fillstyle='none', markerfacecolor='white', color=color)
             ax.set_ylabel('KL(q, p true)')
             ax.set_xticks(num_particless)
 
