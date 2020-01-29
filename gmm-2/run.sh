@@ -11,11 +11,9 @@
 SEED=$1
 NUM_PARTICLES=$2
 ALGORITHM=$3
-
-BATCH_SIZE=60
-NUM_HIDDEN=10
+OTHER_ARGS="${@:4}"
 
 #source /home/tuananh/.bashrc
 #which python
 #python --version
-anaconda-project run python run.py --seed $SEED --num-particles $NUM_PARTICLES --memory-size $NUM_PARTICLES --algorithm $ALGORITHM --num-iterations 50000 --batch-size $BATCH_SIZE --num-hidden $NUM_HIDDEN | tee ./slurm/${SLURM_JOB_ID}_temp.out_err
+anaconda-project run python run.py --seed $SEED --num-particles $NUM_PARTICLES --memory-size $NUM_PARTICLES --algorithm $ALGORITHM --num-iterations 50000 $OTHER_ARGS | tee ./slurm/${SLURM_JOB_ID}_temp.out_err

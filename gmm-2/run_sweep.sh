@@ -6,7 +6,7 @@ do
   do
     for algorithm in mws vimco rws
     do
-      sbatch run.sh $seed $num_particles $algorithm
+      sbatch run.sh $seed $num_particles $algorithm $@
     done
   done
 done
