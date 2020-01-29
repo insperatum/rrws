@@ -122,14 +122,14 @@ class GenerativeModel(nn.Module):
 
 
 class InferenceNetwork(nn.Module):
-    def __init__(self, num_data, num_dim):
+    def __init__(self, num_data, num_dim, num_hidden=16):
         super(InferenceNetwork, self).__init__()
         self.num_data = num_data
         self.num_dim = num_dim
         self.mlp = nn.Sequential(
-            nn.Linear(self.num_data * self.num_dim, 16),
+            nn.Linear(self.num_data * self.num_dim, num_hidden),
             nn.Tanh(),
-            nn.Linear(16, self.num_data * self.num_data))
+            nn.Linear(num_hidden, self.num_data * self.num_data))
 
     def get_latent_params(self, obs):
         """Args:
