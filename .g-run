@@ -1,0 +1,2 @@
+#!/bin/bash
+ln -s ../../gmm-2/envs ./gmm-2/envs
