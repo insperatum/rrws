@@ -7,7 +7,6 @@
 #SBATCH -e ./slurm/%j.err
 
 #cd /om/user/lbh/rrws/gmm-2/
-cd gmm-2
 
 SEED=$1
 NUM_PARTICLES=$2
@@ -16,7 +15,6 @@ ALGORITHM=$3
 BATCH_SIZE=60
 NUM_HIDDEN=10
 
-NUM_
 #source /home/tuananh/.bashrc
 #which python
 #python --version
