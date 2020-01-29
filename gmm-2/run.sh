@@ -7,6 +7,7 @@
 #SBATCH -e ./slurm/%j.err
 
 #cd /om/user/lbh/rrws/gmm-2/
+cd gmm-2
 
 SEED=$1
 NUM_PARTICLES=$2
