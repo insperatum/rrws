@@ -1,8 +1,8 @@
 #!/bin/bash
 cd gmm-2
-for seed in 1 #2 3 4 5 6 7 8 9 10
+for seed in 1 2 3 #4 5 6 7 8 9 10
 do
-  for num_particles in 2 5 10 #20 50
+  for num_particles in 2 5 10 20 50
   do
     for algorithm in mws vimco rws
     do
