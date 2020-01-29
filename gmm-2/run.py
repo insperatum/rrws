@@ -20,7 +20,7 @@ def run(args):
     true_cluster_cov = torch.eye(args.num_dim, device=device) * 0.03
     generative_model, inference_network, true_generative_model = util.init(
         args.num_data, args.num_dim, true_cluster_cov,
-        device)
+        device, num_hidden=args.num_hidden)
     util.set_seed(args.seed)
 
     # data
@@ -96,6 +96,7 @@ if __name__ == '__main__':
     parser.add_argument('--batch-size', type=int, default=20, help=' ')
     parser.add_argument('--num-dim', type=int, default=2, help=' ')
     parser.add_argument('--num-data', type=int, default=7, help=' ')
+    parser.add_argument('--num-hidden', type=int, default=16, help=' ')
     # parser.add_argument('--num-train', type=int, default=100, help=' ')
     parser.add_argument('--num-iterations', type=int, default=10000, help=' ')
     parser.add_argument('--num-particles', type=int, default=5, help=' ')

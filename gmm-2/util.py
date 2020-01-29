@@ -76,13 +76,13 @@ def save_plot(filename, x, label):
     plt.savefig(filename)
 
 
-def init(num_data, num_dim, true_cluster_cov, device):
+def init(num_data, num_dim, true_cluster_cov, device, num_hidden=16):
     prior_loc = torch.zeros(num_dim, device=device)
     prior_cov = torch.eye(num_dim, device=device)
     generative_model = models.GenerativeModel(
         num_data, prior_loc, prior_cov, device).to(device)
     inference_network = models.InferenceNetwork(
-        num_data, num_dim).to(device)
+        num_data, num_dim, num_hidden).to(device)
     true_generative_model = models.GenerativeModel(
         num_data, prior_loc, prior_cov, device,
         true_cluster_cov).to(device)
@@ -103,6 +103,7 @@ def save_checkpoint(path, generative_model, inference_network, theta_losses,
         'phi_losses': phi_losses,
         'num_data': generative_model.num_data,
         'num_dim': generative_model.num_dim,
+        'num_hidden': generative_model.num_hidden,
         'cluster_cov_distances': cluster_cov_distances,
         'test_log_ps': test_log_ps,
         'test_log_ps_true': test_log_ps_true,
@@ -131,7 +132,9 @@ def load_checkpoint(path, device):
     true_cluster_cov = torch.eye(checkpoint['num_dim'], device=device)
     generative_model, inference_network, _ = init(
         checkpoint['num_data'],
-        checkpoint['num_dim'], true_cluster_cov, device)
+        checkpoint['num_dim'], 
+        true_cluster_cov, device,
+        num_hidden=checkpoint['num_hidden'])
 
     generative_model.load_state_dict(checkpoint['generative_model_state_dict'])
     inference_network.load_state_dict(
