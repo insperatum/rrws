@@ -126,6 +126,7 @@ class InferenceNetwork(nn.Module):
         super(InferenceNetwork, self).__init__()
         self.num_data = num_data
         self.num_dim = num_dim
+        self.num_hidden = num_hidden
         self.mlp = nn.Sequential(
             nn.Linear(self.num_data * self.num_dim, num_hidden),
             nn.Tanh(),
