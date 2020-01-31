@@ -50,6 +50,7 @@ packages:
 - torchvision
 - scipy
 - matplotlib
+- seaborn
 #
 # In the channels section, list any Conda channel URLs to be searched
 # for packages.
