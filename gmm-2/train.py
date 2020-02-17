@@ -6,7 +6,7 @@ import models
 
 
 def train_mws(generative_model, inference_network, data_loader,
-              num_iterations, memory_size, true_cluster_cov,
+              num_iterations, memory_size, num_particles, true_cluster_cov,
               test_data_loader, test_num_particles, true_generative_model,
               checkpoint_path, reweighted=False):
     optimizer = torch.optim.Adam(itertools.chain(
@@ -63,11 +63,11 @@ def train_mws(generative_model, inference_network, data_loader,
                 single_obs.unsqueeze(0))
             # [1, 1, num_data] -> [num_data]
             latent = inference_network.sample_from_latent_dist(
-                latent_dist, 1).view(-1)
+                latent_dist, num_particles).view(num_particles, -1)
             # set (of size memory_size + 1) of tuples (of length num_data)
             memoized_latent_plus_current_latent = set(
                 memory.get(single_obs_key, []) +
-                [tuple(latent.tolist())]
+                [tuple(l.tolist()) for l in latent ]
             )
 
             # [memory_size + 1, 1, num_data]

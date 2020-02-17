@@ -47,7 +47,7 @@ def run(args):
          train_kl_pqs_true, train_kl_memory_ps, train_kl_memory_ps_true, memory,
          reweighted_train_kl_qps, reweighted_train_kl_qps_true) = train.train_mws(
             generative_model, inference_network, data_loader,
-            args.num_iterations, args.memory_size, true_cluster_cov,
+            args.num_iterations, args.memory_size, args.num_particles, true_cluster_cov,
             test_data_loader, args.test_num_particles, true_generative_model, checkpoint_path)
     elif args.algorithm == 'rmws':
         (theta_losses, phi_losses, cluster_cov_distances,
