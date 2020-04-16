@@ -173,14 +173,14 @@ def set_seed(seed):
     np.random.seed(seed)
 
 
-def generate_and_save_data():
+def generate_and_save_data(cluster_variance=0.03):
     num_dim = 2
     device = torch.device('cpu')
     num_data = 7
     num_train = 100
     num_test = 100
 
-    true_cluster_cov = torch.eye(num_dim, device=device) * 0.03
+    true_cluster_cov = torch.eye(num_dim, device=device) * cluster_variance
     _, _, true_generative_model = init(
         num_data, num_dim, true_cluster_cov,
         device)

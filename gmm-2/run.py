@@ -17,7 +17,7 @@ def run(args):
 
     # init
     util.print_with_time('init')
-    true_cluster_cov = torch.eye(args.num_dim, device=device) * 0.03
+    true_cluster_cov = torch.eye(args.num_dim, device=device) * args.cluster_variance
     generative_model, inference_network, true_generative_model = util.init(
         args.num_data, args.num_dim, true_cluster_cov,
         device, num_hidden=args.num_hidden)
@@ -101,6 +101,7 @@ if __name__ == '__main__':
     parser.add_argument('--num-iterations', type=int, default=10000, help=' ')
     parser.add_argument('--num-particles', type=int, default=5, help=' ')
     parser.add_argument('--memory-size', type=int, default=5, help=' ')
+    parser.add_argument('--cluster-variance', type=float, default=0.03, help=' ')
     # parser.add_argument('--num-test', type=int, default=100, help=' ')
     parser.add_argument('--test-num-particles', type=int, default=5000,
                         help=' ')
