@@ -38,8 +38,8 @@ def run(args):
     if args.test_run:
         checkpoint_path = 'checkpoint.pt'
     else:
-        checkpoint_path = 'checkpoints/{}_{}_{}_{}.pt'.format(
-            args.checkpoint_path_prefix, args.algorithm, args.seed, args.num_particles)
+        checkpoint_path = 'checkpoints/{}_{}_{}_{}_{}.pt'.format(
+            args.checkpoint_path_prefix, args.algorithm, args.seed, args.num_particles, args.cluster_variance)
     if args.algorithm == 'mws':
         (theta_losses, phi_losses, cluster_cov_distances,
          test_log_ps, test_log_ps_true, test_kl_qps, test_kl_pqs, test_kl_qps_true, test_kl_pqs_true,

@@ -1,6 +1,6 @@
 #!/bin/bash
 cd gmm-2
-for seed in 1 2 3 4 5
+for seed in 1 2 3 4 5 6 7 8 9 10
 do
   for cluster_variance in 0.03 0.1 0.3 1
   do
